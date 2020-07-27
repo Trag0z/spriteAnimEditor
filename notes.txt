@@ -1,0 +1,10 @@
+NEXT:
+- something with multibyte character sets is wrong in AnimationEditor animation loading
+
+TODO:
+
+Bugs:               (@BUG)
+
+Cleanup:            (@CLEANUP)
+
+Optimizations:      (@OPTIMIZE)

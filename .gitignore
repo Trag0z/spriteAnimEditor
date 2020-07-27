@@ -1,0 +1,7 @@
+*.pdb
+*.idb
+*.tlog
+*.ilk
+
+.vs/spriteAnimEditor
+bin/

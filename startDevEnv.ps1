@@ -1,0 +1,2 @@
+code .
+.\spriteAnimEditor.sln
