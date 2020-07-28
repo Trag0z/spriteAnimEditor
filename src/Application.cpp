@@ -1,7 +1,11 @@
 #pragma once
 #include "pch.h"
 #include "Application.h"
+#include "Util.h"
+
+#ifndef NDEBUG
 #include "DebugCallback.h"
+#endif
 
 void Application::init() {
 #ifndef NDEBUG
@@ -15,9 +19,8 @@ void Application::init() {
     SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
     SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 2);
 
-    window = SDL_CreateWindow("procTree", 3840, 956, 1920, 1080,
-                              SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_BORDERLESS |
-                                  SDL_WINDOW_OPENGL);
+    window = SDL_CreateWindow("AnimationEditor", 3870, 980, 500, 400,
+                              SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_OPENGL);
     SDL_assert_always(window);
 
     sdl_renderer = SDL_CreateRenderer(window, -1, 0);
@@ -80,66 +83,11 @@ void Application::init() {
     ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
     ImGui_ImplOpenGL3_Init(glsl_version);
 
-    //          Create shaders              //
-    shaders.construction = load_and_compile_shader_from_file(
-        "../src/shaders/construction.vert", "../src/shaders/construction.geom",
-        nullptr);
+    default_shader =
+        Shader("../src/shaders/default.vert", "../src/shaders/default.frag");
 
-    shaders.line = load_and_compile_shader_from_file(
-        "../src/shaders/line.vert", nullptr, "../src/shaders/line.frag");
-
-    shaders.render = load_and_compile_shader_from_file(
-        "../src/shaders/render.vert", nullptr, "../src/shaders/render.frag");
-
-    //          Setup buffers               //
-    start_vbo =
-        ArrayBuffer(GL_ARRAY_BUFFER, GL_STREAM_DRAW, sizeof(Vertex) * 3);
-
-    const GLuint max_triangles =
-        calculate_num_triangles(MAX_GEOMETRY_ITERATIONS);
-
-    feedback_vbo[0] = ArrayBuffer(GL_ARRAY_BUFFER, GL_STREAM_COPY,
-                                  sizeof(Vertex) * max_triangles * 3);
-    feedback_vbo[1] = ArrayBuffer(GL_ARRAY_BUFFER, GL_STREAM_COPY,
-                                  sizeof(Vertex) * max_triangles * 3);
-
-    start_vao = VertexArray(start_vbo);
-    feedback_vao[0] = VertexArray(feedback_vbo[0]);
-    feedback_vao[1] = VertexArray(feedback_vbo[1]);
-
-    //          Initial data                //
-    Vertex* vertices = new Vertex[max_triangles * 3];
-
-    float sin = sinf(glm::radians(120.0f));
-    float cos = cosf(glm::radians(120.0f));
-
-    vertices[0].position = {-sin, 0.0f, cos, 1.0f};
-    vertices[1].position = {0.0f, 0.0f, 1.0f, 1.0f};
-    vertices[2].position = {sin, 0.0f, cos, 1.0f};
-
-    vertices[0].normal = {0.0f, 1.0f, 0.0f};
-    vertices[1].normal = {0.0f, 1.0f, 0.0f};
-    vertices[2].normal = {0.0f, 1.0f, 0.0f};
-
-    vertices[0].length = 5.0f;
-    vertices[1].length = 5.0f;
-    vertices[2].length = 5.0f;
-
-    start_vbo.write_data(sizeof(Vertex) * 3, vertices);
-
-    //          First Geometry pass          //
-    glUseProgram(shaders.construction);
-    start_vao.bind();
-    feedback_vbo[0].bind_as_feedback_target();
-
-    glBeginTransformFeedback(GL_POINTS);
-    glDrawArrays(GL_TRIANGLES, 0, 3);
-    glEndTransformFeedback();
-    glFlush();
-
-    run_geometry_pass = false;
-
-    num_triangles = calculate_num_triangles(++geometry_iteration);
+    sheet_shader =
+        Shader("../src/shaders/sheet.vert", "../src/shaders/sheet.frag");
 
     running = true;
 }
@@ -175,100 +123,27 @@ void Application::run() {
     { // Update gui
         using namespace ImGui;
 
+        SetNextWindowPos({-5.0, -5.0});
         Begin("Controls", NULL, ImGuiWindowFlags_NoTitleBar);
-        run_geometry_pass = Button("Run geometry pass");
-        Text("Geometry passes: %u/%u", geometry_iteration,
-             MAX_GEOMETRY_ITERATIONS);
 
-        NewLine();
-        Text("Right mouse button to turn the model.");
-
-        NewLine();
-        Checkbox("Render model", &render_model);
-        Checkbox("Render wireframes", &render_wireframes);
-
-        NewLine();
-        DragFloat3("Light position", value_ptr(light_position), 0.2f);
+        if (Button("Open...")) {
+            open_file();
+        }
+        SameLine();
+        if (Button("Save")) {
+            // TODO
+        }
+        SameLine();
+        if (Button("Save as...")) {
+            // TODO
+        }
 
         End();
-    }
-
-    if (run_geometry_pass && geometry_iteration < MAX_GEOMETRY_ITERATIONS) {
-        ++geometry_iteration;
-        read_buffer_index = geometry_iteration % 2;
-        write_buffer_index = read_buffer_index ^ 1;
-
-        glUseProgram(shaders.construction);
-
-        feedback_vao[read_buffer_index].bind();
-        feedback_vbo[write_buffer_index].bind_as_feedback_target();
-
-        glBeginTransformFeedback(GL_POINTS);
-        glDrawArrays(GL_TRIANGLES, 0, num_triangles * 3);
-        glEndTransformFeedback();
-        glFlush();
-
-        num_triangles = calculate_num_triangles(geometry_iteration);
     }
 
     // Render
     glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    // Update camera
-    if (mouse.button_state & SDL_BUTTON(SDL_BUTTON_RIGHT)) {
-        const float sensitivity = 0.03f;
-        object_rotation += (mouse.x - mouse.last_x) * sensitivity;
-    }
-
-    glm::mat4 projection =
-        glm::perspective(glm::radians(100.0f), 1920.0f / 1200.0f, 0.1f, 100.0f);
-
-    const glm::mat4 view =
-        glm::lookAt(camera.pos, camera.target, {0.0f, 1.0f, 0.0f});
-
-    glm::mat4 model =
-        glm::rotate(glm::mat4(1.0f), object_rotation, {0.0f, 1.0f, 0.0f});
-
-    if (render_model) {
-        glUseProgram(shaders.render);
-
-        GLuint projection_id =
-            glGetUniformLocation(shaders.render, "projection");
-        glUniformMatrix4fv(projection_id, 1, 0, value_ptr(projection));
-
-        GLuint view_id = glGetUniformLocation(shaders.render, "view");
-        glUniformMatrix4fv(view_id, 1, 0, value_ptr(view));
-
-        GLuint model_id = glGetUniformLocation(shaders.render, "model");
-        glUniformMatrix4fv(model_id, 1, 0, value_ptr(model));
-
-        GLuint light_pos_id = glGetUniformLocation(shaders.render, "light_pos");
-        glUniform3fv(light_pos_id, 1, value_ptr(light_position));
-
-        GLuint camera_pos_id =
-            glGetUniformLocation(shaders.render, "camera_pos");
-        glUniform3fv(camera_pos_id, 1, value_ptr(camera.pos));
-
-        feedback_vao[write_buffer_index].bind();
-        glDrawArrays(GL_TRIANGLES, 0, num_triangles * 3);
-    }
-
-    // Debug rendering
-    glUseProgram(shaders.line);
-
-    GLuint projection_id = glGetUniformLocation(shaders.line, "projection");
-    glUniformMatrix4fv(projection_id, 1, 0, value_ptr(projection));
-
-    GLuint view_id = glGetUniformLocation(shaders.line, "view");
-    glUniformMatrix4fv(view_id, 1, 0, value_ptr(view));
-
-    GLuint model_id = glGetUniformLocation(shaders.line, "model");
-    glUniformMatrix4fv(model_id, 1, 0, value_ptr(model));
-
-    if (render_wireframes) {
-        glDrawArrays(GL_LINE_STRIP, 0, num_triangles * 3);
-    }
 
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -279,4 +154,71 @@ void Application::run() {
     u32 last_frame_time = SDL_GetTicks() - frame_start;
     if (frame_delay > last_frame_time)
         SDL_Delay(frame_delay - last_frame_time);
+}
+
+void Application::open_file() {
+    { // Get path
+        HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED |
+                                              COINIT_DISABLE_OLE1DDE);
+
+        SDL_assert_always(SUCCEEDED(hr));
+        IFileOpenDialog* pFileOpen;
+
+        hr = CoCreateInstance(CLSID_FileOpenDialog, NULL, CLSCTX_ALL,
+                              IID_IFileOpenDialog,
+                              reinterpret_cast<void**>(&pFileOpen));
+
+        SDL_assert_always(SUCCEEDED(hr));
+
+        COMDLG_FILTERSPEC file_type = {L".png, .anim", L"*.png; *.anim"};
+        pFileOpen->SetFileTypes(1, &file_type);
+
+        // Show the Open dialog box.
+        hr = pFileOpen->Show(NULL);
+
+        if (!SUCCEEDED(hr)) {
+            return;
+        }
+
+        // Get the file name from the dialog box.
+        IShellItem* pItem;
+        hr = pFileOpen->GetResult(&pItem);
+
+        SDL_assert_always(SUCCEEDED(hr));
+        PWSTR pszFilePath;
+        hr = pItem->GetDisplayName(SIGDN_FILESYSPATH, &pszFilePath);
+
+        if (opened_path) {
+            delete[] opened_path;
+        }
+
+        size_t length = wcslen(pszFilePath) + 1;
+        opened_path = new char[length];
+
+        wcstombs_s(nullptr, opened_path, length, pszFilePath, length);
+
+        CoTaskMemFree(pszFilePath);
+
+        SDL_assert_always(SUCCEEDED(hr));
+
+        pItem->Release();
+        pFileOpen->Release();
+
+        CoUninitialize();
+    }
+
+    const char* extension = strrchr(opened_path, '.');
+    SDL_assert_always(extension);
+
+    if (strcmp(extension, ".png") == 0) {
+        animations.clear();
+        sprite_sheet.load_from_file(opened_path);
+
+        sprite_dimensions =
+            glm::uvec2(greatest_common_divisor(sprite_sheet.w, sprite_sheet.h));
+        num_sprites = (sprite_sheet.w / sprite_dimensions.x) *
+                      (sprite_sheet.h / sprite_dimensions.y);
+    } else {
+        // TODO: load binary file
+    }
 }

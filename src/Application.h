@@ -1,7 +1,19 @@
 #pragma once
 #include "pch.h"
 #include "Types.h"
-#include "Vertex.h"
+#include "Shader.h"
+#include "Texture.h"
+
+struct Animation {
+    size_t num_steps = 0;
+
+    struct AnimationStepData {
+        uint sprite_id;
+        uint duration;
+    };
+
+    std::vector<AnimationStepData> anim_steps;
+};
 
 class Application {
     SDL_Window* window;
@@ -17,9 +29,23 @@ class Application {
         u32 button_state;
     } mouse;
 
-    bool running = false;
+    Shader sheet_shader;
+    Shader default_shader;
+
+    // Animation Editor stuff
+    std::vector<Animation> animations;
+    Texture sprite_sheet;
+
+    glm::uvec2 sprite_dimensions;
+    uint num_sprites;
+
+    char* opened_path = nullptr;
+
+    void open_file();
 
   public:
     void init();
     void run();
+
+    bool running = false;
 };

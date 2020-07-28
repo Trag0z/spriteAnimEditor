@@ -24,11 +24,6 @@
 
 #include <sdl/SDL.h>
 #include <sdl/SDL_image.h>
-#include <sdl/SDL_ttf.h>
-
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
 
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_sdl.h>
@@ -36,7 +31,7 @@
 
 #pragma warning(pop)
 
-#undef GL_CLIP_ORIGIN
+// #undef GL_CLIP_ORIGIN
 
 // #define SDL_MAIN_HANDLED
 // #include <ctype.h>
