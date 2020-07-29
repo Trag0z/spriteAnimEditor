@@ -1,10 +1,13 @@
 NEXT:
-- rendering
 
 TODO:
 - saving
+- render lines on sheet
+- preview animation
+- open name input modal when adding animation?
 
 Bugs:               (@BUG)
+- .pngs are flipped vertically
 
 Cleanup:            (@CLEANUP)
 

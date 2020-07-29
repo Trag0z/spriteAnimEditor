@@ -12,5 +12,5 @@ void main()
 {
     uv_coord=in_uv_coord;
     ivec2 sheet_dimensions=textureSize(texture1,0);
-    gl_Position=projection*vec4(render_position.x+pos.x*float(320),pos.y*float(64)+render_position.y,0.,1.);
+    gl_Position=projection*vec4(render_position.x+pos.x*float(sheet_dimensions.x),pos.y*float(sheet_dimensions.y)+render_position.y,0.,1.);
 }
