@@ -15,7 +15,7 @@ struct Animation {
         float duration;
     };
 
-    std::vector<AnimationStepData> anim_steps;
+    std::vector<AnimationStepData> steps;
 };
 
 class Application {
@@ -32,11 +32,15 @@ class Application {
         u32 button_state;
     } mouse;
 
-    Shader default_shader;
+    DefaultShader default_shader;
     SheetShader sheet_shader;
 
-    const uint ui_width = 500;
-    glm::ivec2 window_size = {ui_width, 500};
+    glm::mat4 projection;
+
+    GLuint vao, vbo;
+
+    const glm::ivec2 ui_size = {300, 500};
+    glm::ivec2 window_size = ui_size;
 
     // Animation Editor stuff
     size_t selected_anim_index;

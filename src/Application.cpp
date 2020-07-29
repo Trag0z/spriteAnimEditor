@@ -19,7 +19,7 @@ void Application::init() {
     SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
     SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 2);
 
-    window = SDL_CreateWindow("AnimationEditor", 3870, 980, window_size.x,
+    window = SDL_CreateWindow("AnimationEditor", 3870, 1000, window_size.x,
                               window_size.y,
                               SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_OPENGL);
     SDL_assert_always(window);
@@ -58,12 +58,8 @@ void Application::init() {
     }
 
     glViewport(0, 0, window_size.x, window_size.y);
-    glEnable(GL_CULL_FACE);
-    glFrontFace(GL_CCW);
-
-    glEnable(GL_DEPTH_TEST);
-
-    glEnable(GL_MULTISAMPLE);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 #ifndef NDEBUG
     glEnable(GL_DEBUG_OUTPUT);
@@ -81,19 +77,41 @@ void Application::init() {
     ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
     ImGui_ImplOpenGL3_Init(glsl_version);
 
-    default_shader =
-        Shader("../src/shaders/default.vert", "../src/shaders/default.frag");
+    // Load shaders
+    default_shader = DefaultShader("../src/shaders/default.vert",
+                                   "../src/shaders/default.frag");
 
     sheet_shader =
         SheetShader("../src/shaders/sheet.vert", "../src/shaders/sheet.frag");
 
+    // Init vertex buffer for triangle strip rendering
+    struct {
+        glm::vec2 pos, uv_coord;
+    } vertices[4];
+
+    vertices[0] = {{0.0f, 0.0f}, {0.0f, 1.0f}};
+    vertices[1] = {{1.0f, 0.0f}, {1.0f, 1.0f}};
+    vertices[2] = {{0.0f, 1.0f}, {0.0f, 0.0f}};
+    vertices[3] = {{1.0f, 1.0f}, {1.0f, 0.0f}};
+
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
+
+    // GLuint vbo;
+    glGenBuffers(1, &vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(vertices[0]),
+                          (void*)0);
+    glEnableVertexAttribArray(0);
+
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(vertices[0]),
+                          (void*)sizeof(glm::vec2));
+    glEnableVertexAttribArray(1);
+
     running = true;
 }
-
-// static int set_new_name(char dst[Animation::MAX_NAME_LENGTH],
-//                        const char src[Animation::MAX_NAME_LENGTH]) {
-//    strcpy_s(dst, Animation::MAX_NAME_LENGTH, src);
-//}
 
 void Application::run() {
     last_frame_start = frame_start;
@@ -126,8 +144,12 @@ void Application::run() {
     { // Update gui
         using namespace ImGui;
 
-        SetNextWindowPos({-5.0, -5.0});
-        Begin("Controls", NULL, ImGuiWindowFlags_NoTitleBar);
+        const ImVec2 window_pos = {-5.0, -5.0};
+        SetNextWindowPos(window_pos);
+        SetNextWindowSize(ImVec2(static_cast<float>(ui_size.x) - window_pos.x,
+                                 static_cast<float>(ui_size.y) - window_pos.y));
+        Begin("Controls", NULL,
+              ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
 
         if (Button("Open...")) {
             open_file();
@@ -168,11 +190,11 @@ void Application::run() {
                 Separator();
 
                 char buf[32];
-                for (size_t i = 0; i < anim.anim_steps.size(); ++i) {
+                for (size_t i = 0; i < anim.steps.size(); ++i) {
                     _itoa_s(static_cast<int>(i), buf, 10);
                     PushID(buf);
 
-                    auto& step = anim.anim_steps[i];
+                    auto& step = anim.steps[i];
                     // TODO: display image
 
                     int new_sprite_id = static_cast<int>(step.sprite_id);
@@ -188,7 +210,7 @@ void Application::run() {
                 }
 
                 if (Button("Add step")) {
-                    anim.anim_steps.push_back({0, 0.0f});
+                    anim.steps.push_back({0, 0.0f});
                 }
                 TreePop();
             }
@@ -203,9 +225,24 @@ void Application::run() {
         End();
     }
 
-    // Render
+    // Rendering
     glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    if (sprite_sheet.id != 0) {
+        default_shader.use();
+        default_shader.set_render_position(
+            {static_cast<float>(ui_size.x), 0.0f});
+
+        projection = glm::ortho(0.0f, static_cast<float>(window_size.x),
+                                static_cast<float>(window_size.y), 0.0f);
+        default_shader.set_projection(projection);
+
+        glBindTexture(GL_TEXTURE_2D, sprite_sheet.id);
+        glBindVertexArray(vao);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+        glDrawArrays(GL_LINE_STRIP, 0, 4);
+    }
 
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -281,10 +318,14 @@ void Application::open_file() {
         num_sprites = (sprite_sheet.w / sprite_dimensions.x) *
                       (sprite_sheet.h / sprite_dimensions.y);
 
-        window_size = {sprite_sheet.w + ui_width,
-                       std::max(sprite_sheet.h, 500u)};
+        window_size = {
+            sprite_sheet.w + ui_size.x,
+            std::max(static_cast<glm::i32>(sprite_sheet.h), ui_size.y)};
         SDL_SetWindowSize(window, window_size.x, window_size.y);
+        glViewport(0, 0, window_size.x, window_size.y);
     } else {
         // TODO: load binary file
+
+        glBindTexture(GL_TEXTURE_2D, sprite_sheet.id);
     }
 }

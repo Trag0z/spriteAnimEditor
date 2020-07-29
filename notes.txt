@@ -1,7 +1,8 @@
 NEXT:
-- something with multibyte character sets is wrong in AnimationEditor animation loading
+- rendering
 
 TODO:
+- saving
 
 Bugs:               (@BUG)
 

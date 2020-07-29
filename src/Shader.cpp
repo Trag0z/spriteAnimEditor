@@ -81,9 +81,23 @@ GLuint loadAndCompileShaderFromFile(const char* vShaderPath,
 
 Shader::Shader(const char* vert_path, const char* frag_path) {
     id = loadAndCompileShaderFromFile(vert_path, frag_path);
+    projection_loc = glGetUniformLocation(id, "projection");
 }
 
 void Shader::use() const { glUseProgram(id); }
+
+void Shader::set_projection(glm::mat4 projection) const {
+    glUniformMatrix4fv(projection_loc, 1, GL_FALSE, value_ptr(projection));
+}
+
+DefaultShader::DefaultShader(const char* vert_path, const char* frag_path)
+    : Shader(vert_path, frag_path) {
+    render_position_loc = glGetUniformLocation(id, "render_position");
+}
+
+void DefaultShader::set_render_position(glm::vec2 position) const {
+    glUniform2fv(render_position_loc, 1, value_ptr(position));
+}
 
 SheetShader::SheetShader(const char* vert_path, const char* frag_path)
     : Shader(vert_path, frag_path) {
@@ -91,10 +105,10 @@ SheetShader::SheetShader(const char* vert_path, const char* frag_path)
     sprite_index_loc = glGetUniformLocation(id, "sprite_index");
 }
 
-void SheetShader::set_sprite_dimensions(glm::ivec2 dimensions) {
-    glUniform2uiv(sprite_dimensions_loc, 1, (GLuint*)&dimensions);
+void SheetShader::set_sprite_dimensions(glm::ivec2 dimensions) const {
+    glUniform2iv(sprite_dimensions_loc, 1, value_ptr(dimensions));
 }
-void SheetShader::set_sprite_index(GLint index) {
+void SheetShader::set_sprite_index(GLint index) const {
     glUniform1i(sprite_index_loc, index);
 }
 

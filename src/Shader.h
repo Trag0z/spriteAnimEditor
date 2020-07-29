@@ -8,7 +8,7 @@ GLuint loadAndCompileShaderFromFile(const char* vShaderPath,
 
 class Shader {
   protected:
-    GLuint id;
+    GLuint id, projection_loc;
 
   public:
     Shader() {}
@@ -16,6 +16,18 @@ class Shader {
 
   public:
     void use() const;
+
+    void set_projection(glm::mat4 projection) const;
+};
+
+class DefaultShader : public Shader {
+    GLuint render_position_loc;
+
+  public:
+    DefaultShader() {}
+    DefaultShader(const char* vert_path, const char* frag_path);
+
+    void set_render_position(glm::vec2 position) const;
 };
 
 class SheetShader : public Shader {
@@ -25,6 +37,6 @@ class SheetShader : public Shader {
     SheetShader() {}
     SheetShader(const char* vert_path, const char* frag_path);
 
-    void set_sprite_dimensions(glm::ivec2 dimensions);
-    void set_sprite_index(GLint index);
+    void set_sprite_dimensions(glm::ivec2 dimensions) const;
+    void set_sprite_index(GLint index) const;
 };
