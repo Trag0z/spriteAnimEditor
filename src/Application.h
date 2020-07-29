@@ -15,7 +15,7 @@ struct Animation {
         float duration;
     };
 
-    std::vector<AnimationStepData> steps;
+    std::list<AnimationStepData> steps;
 };
 
 class Application {
@@ -52,8 +52,6 @@ class Application {
     uint num_sprites;
 
     char* opened_path = nullptr;
-
-    char new_name_buf[Animation::MAX_NAME_LENGTH];
 
     bool show_preview = false;
 

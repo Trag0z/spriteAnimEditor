@@ -171,55 +171,80 @@ void Application::run() {
         NewLine();
         Text("Animations");
 
-        for (auto& anim : animations) {
-            if (TreeNode(anim.name)) {
-                if (Button("Set name")) {
-                    OpenPopup("Set name.");
-                }
+        static const char* current_item_name;
 
-                if (BeginPopupModal("Set name.")) {
-                    InputTextWithHint("Name", "New name", new_name_buf,
-                                      Animation::MAX_NAME_LENGTH);
-                    if (Button("Set")) {
-                        strcpy_s(anim.name, new_name_buf);
-                        new_name_buf[0] = '\n';
-                    }
-                    EndPopup();
-                }
-
-                Separator();
-
-                char buf[32];
-                for (size_t i = 0; i < anim.steps.size(); ++i) {
-                    _itoa_s(static_cast<int>(i), buf, 10);
-                    PushID(buf);
-
-                    auto& step = anim.steps[i];
-                    // TODO: display image
-
-                    int new_sprite_id = static_cast<int>(step.sprite_id);
-                    InputInt("Sprite id", &new_sprite_id, 1);
-                    new_sprite_id = std::clamp(new_sprite_id, 0,
-                                               static_cast<int>(num_sprites));
-                    step.sprite_id = static_cast<uint>(new_sprite_id);
-
-                    InputFloat("Duration", &step.duration, 1.0f, 0.0f, "% .2f");
-                    step.duration = std::clamp(step.duration, 0.0f, 1000.0f);
-
-                    PopID();
-                }
-
-                if (Button("Add step")) {
-                    anim.steps.push_back({0, 0.0f});
-                }
-                TreePop();
-            }
+        if (selected_anim_index < animations.size()) {
+            current_item_name = animations[selected_anim_index].name;
+        } else {
+            current_item_name = "none";
         }
 
+        if (BeginCombo("", current_item_name)) {
+            for (size_t i = 0; i < animations.size(); ++i) {
+                bool is_selected = (selected_anim_index == i);
+                if (Selectable(animations[i].name, is_selected)) {
+                    selected_anim_index = i;
+                }
+            }
+            EndCombo();
+        }
+        SameLine();
         if (Button("Add")) {
             Animation new_anim;
             _itoa_s(static_cast<int>(animations.size()), new_anim.name, 10);
             animations.push_back(new_anim);
+            selected_anim_index = animations.size() - 1;
+        }
+        SameLine();
+        if (Button("Remove")) {
+            animations.erase(animations.begin() + selected_anim_index);
+        }
+        SameLine();
+        if (Button("Set name")) {
+            OpenPopup("Set name.");
+        }
+
+        if (selected_anim_index < animations.size()) {
+            auto& selected_anim = animations[selected_anim_index];
+
+            SetNextItemWidth(300);
+            if (BeginPopupModal("Set name.")) {
+                static char new_name_buf[Animation::MAX_NAME_LENGTH];
+                InputTextWithHint("Name", "New name", new_name_buf,
+                                  Animation::MAX_NAME_LENGTH);
+                if (Button("Set")) {
+                    strcpy_s(selected_anim.name, new_name_buf);
+                    new_name_buf[0] = '\n';
+                    CloseCurrentPopup();
+                }
+                EndPopup();
+            }
+
+            Separator();
+
+            char buf[32];
+            size_t i = 0;
+            for (auto& step : selected_anim.steps) {
+                _itoa_s(static_cast<int>(i++), buf, 10);
+                PushID(buf);
+
+                // TODO: display image
+
+                int new_sprite_id = static_cast<int>(step.sprite_id);
+                InputInt("Sprite id", &new_sprite_id, 1);
+                new_sprite_id =
+                    std::clamp(new_sprite_id, 0, static_cast<int>(num_sprites));
+                step.sprite_id = static_cast<uint>(new_sprite_id);
+
+                InputFloat("Duration", &step.duration, 1.0f, 0.0f, "% .2f");
+                step.duration = std::clamp(step.duration, 0.0f, 1000.0f);
+
+                PopID();
+            }
+
+            if (Button("Add step")) {
+                selected_anim.steps.push_back({0, 0.0f});
+            }
         }
 
         End();
