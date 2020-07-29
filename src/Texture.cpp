@@ -8,13 +8,13 @@ void Texture::load_from_file(const char* path) {
     SDL_Surface* img = IMG_Load(path);
     SDL_assert(img);
 
-    w = img->w;
-    h = img->h;
+    dimensions.x = img->w;
+    dimensions.y = img->h;
 
     glGenTextures(1, &id);
     glBindTexture(GL_TEXTURE_2D, id);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE,
-                 img->pixels);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, dimensions.x, dimensions.y, 0,
+                 GL_RGBA, GL_UNSIGNED_BYTE, img->pixels);
     // NOTE: Is this actually useful?
     // glGenerateMipmap(GL_TEXTURE_2D);
     SDL_FreeSurface(img);

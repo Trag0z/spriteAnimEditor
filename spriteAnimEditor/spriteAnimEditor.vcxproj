@@ -144,6 +144,7 @@
     <ClCompile Include="..\include\imgui\imgui_impl_opengl3.cpp" />
     <ClCompile Include="..\include\imgui\imgui_impl_sdl.cpp" />
     <ClCompile Include="..\include\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="..\src\Animation.cpp" />
     <ClCompile Include="..\src\Application.cpp" />
     <ClCompile Include="..\src\main.cpp" />
     <ClCompile Include="..\src\pch.cpp">
@@ -161,6 +162,7 @@
     <ClInclude Include="..\include\imgui\imstb_rectpack.h" />
     <ClInclude Include="..\include\imgui\imstb_textedit.h" />
     <ClInclude Include="..\include\imgui\imstb_truetype.h" />
+    <ClInclude Include="..\src\Animation.h" />
     <ClInclude Include="..\src\Application.h" />
     <ClInclude Include="..\src\DebugCallback.h" />
     <ClInclude Include="..\src\pch.h" />

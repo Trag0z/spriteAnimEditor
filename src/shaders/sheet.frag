@@ -10,7 +10,7 @@ uniform int sprite_index;
 void main()
 {
     ivec2 sheet_dimensions=textureSize(texture1,0);
-    vec2 sprite_uv_dimensions={float(sprite_dimensions.x)/sheet_dimensions.x,float(sprite_dimensions.y)/sheet_dimensions.y};
+    vec2 sprite_uv_dimensions={sprite_dimensions.x/sheet_dimensions.x,sprite_dimensions.y/sheet_dimensions.y};
     
     vec2 new_uv_coord;
     new_uv_coord.x=sprite_uv_dimensions.x*float(sprite_index)+(uv_coord.x*sprite_uv_dimensions.x);

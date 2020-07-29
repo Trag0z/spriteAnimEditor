@@ -78,8 +78,8 @@ void Application::init() {
     ImGui_ImplOpenGL3_Init(glsl_version);
 
     // Load shaders
-    default_shader = DefaultShader("../src/shaders/default.vert",
-                                   "../src/shaders/default.frag");
+    default_shader =
+        Shader("../src/shaders/default.vert", "../src/shaders/default.frag");
 
     sheet_shader =
         SheetShader("../src/shaders/sheet.vert", "../src/shaders/sheet.frag");
@@ -163,10 +163,26 @@ void Application::run() {
             // TODO
         }
 
-        Checkbox("Preview animation", &show_preview);
+        if (Checkbox("Preview animation", &show_preview)) {
+            if (show_preview) {
+                window_size.y = std::max(
+                    sprite_sheet.dimensions.y + sprite_dimensions.y, ui_size.y);
+                SDL_SetWindowSize(window, window_size.x, window_size.y);
+            } else {
+                window_size.y = std::max(sprite_sheet.dimensions.y, ui_size.y);
+                SDL_SetWindowSize(window, window_size.x, window_size.y);
+            }
+        }
 
         PushItemWidth(100);
-        DragInt2("Sprite dimensions", (int*)&sprite_dimensions, 1.0f, 1, 0);
+        if (DragInt2("Sprite dimensions", (int*)&sprite_dimensions, 1.0f, 1,
+                     0)) {
+            if (show_preview) {
+                window_size.y = std::max(
+                    sprite_sheet.dimensions.y + sprite_dimensions.y, ui_size.y);
+                SDL_SetWindowSize(window, window_size.x, window_size.y);
+            }
+        }
 
         NewLine();
         Text("Animations");
@@ -184,6 +200,7 @@ void Application::run() {
                 bool is_selected = (selected_anim_index == i);
                 if (Selectable(animations[i].name, is_selected)) {
                     selected_anim_index = i;
+                    preview.set_animation(&animations[selected_anim_index]);
                 }
             }
             EndCombo();
@@ -231,11 +248,11 @@ void Application::run() {
 
                 // TODO: display image
 
-                int new_sprite_id = static_cast<int>(step.sprite_id);
+                int new_sprite_id = static_cast<int>(step.sprite_index);
                 InputInt("Sprite id", &new_sprite_id, 1);
                 new_sprite_id =
                     std::clamp(new_sprite_id, 0, static_cast<int>(num_sprites));
-                step.sprite_id = static_cast<uint>(new_sprite_id);
+                step.sprite_index = static_cast<uint>(new_sprite_id);
 
                 InputFloat("Duration", &step.duration, 1.0f, 0.0f, "% .2f");
                 step.duration = std::clamp(step.duration, 0.0f, 1000.0f);
@@ -254,23 +271,45 @@ void Application::run() {
         End();
     }
 
+    // Update preview
+    if (show_preview) {
+        float delta_time = static_cast<float>(frame_start - last_frame_start) /
+                           static_cast<float>(frame_delay);
+        preview.update(delta_time);
+    }
+
     // Rendering
     glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     if (sprite_sheet.id != 0) {
+        // Render sprite sheet
         default_shader.use();
-        default_shader.set_render_position(
-            {static_cast<float>(ui_size.x), 0.0f});
-
         projection = glm::ortho(0.0f, static_cast<float>(window_size.x),
                                 static_cast<float>(window_size.y), 0.0f);
         default_shader.set_projection(projection);
+
+        glm::vec2 render_position = {static_cast<float>(ui_size.x), 0.0f};
+        default_shader.set_render_position(render_position);
 
         glBindTexture(GL_TEXTURE_2D, sprite_sheet.id);
         glBindVertexArray(vao);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
         glDrawArrays(GL_LINE_STRIP, 0, 4);
+
+        // Render preview
+        if (selected_anim_index < animations.size()) {
+            sheet_shader.use();
+            sheet_shader.set_projection(projection);
+
+            render_position.y += sprite_sheet.dimensions.y;
+            sheet_shader.set_render_position(render_position);
+
+            sheet_shader.set_sprite_dimensions(
+                static_cast<glm::vec2>(sprite_dimensions));
+            sheet_shader.set_sprite_index(preview.get_sprite_index());
+            glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+        }
     }
 
     ImGui::Render();
@@ -342,14 +381,18 @@ void Application::open_file() {
         animations.clear();
         sprite_sheet.load_from_file(opened_path);
 
-        sprite_dimensions =
-            glm::uvec2(greatest_common_divisor(sprite_sheet.w, sprite_sheet.h));
-        num_sprites = (sprite_sheet.w / sprite_dimensions.x) *
-                      (sprite_sheet.h / sprite_dimensions.y);
+        sprite_dimensions = glm::uvec2(greatest_common_divisor(
+            sprite_sheet.dimensions.x, sprite_sheet.dimensions.y));
+        num_sprites = (sprite_sheet.dimensions.x / sprite_dimensions.x) *
+                      (sprite_sheet.dimensions.y / sprite_dimensions.y);
 
-        window_size = {
-            sprite_sheet.w + ui_size.x,
-            std::max(static_cast<glm::i32>(sprite_sheet.h), ui_size.y)};
+        window_size = {sprite_sheet.dimensions.x + ui_size.x,
+                       std::max(sprite_sheet.dimensions.y, ui_size.y)};
+
+        if (show_preview) {
+            window_size.y += sprite_dimensions.y;
+        }
+
         SDL_SetWindowSize(window, window_size.x, window_size.y);
         glViewport(0, 0, window_size.x, window_size.y);
     } else {

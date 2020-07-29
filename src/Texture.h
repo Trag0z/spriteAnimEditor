@@ -3,8 +3,7 @@
 
 struct Texture {
     GLuint id;
-    GLuint w, h;
-    glm::vec2 dimensions;
+    glm::ivec2 dimensions;
 
     void load_from_file(const char* path);
 };
