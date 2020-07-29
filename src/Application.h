@@ -15,7 +15,7 @@ struct Animation {
         float duration;
     };
 
-    std::list<AnimationStepData> steps;
+    std::vector<AnimationStepData> steps;
 };
 
 class Application {

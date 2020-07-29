@@ -223,10 +223,11 @@ void Application::run() {
             Separator();
 
             char buf[32];
-            size_t i = 0;
-            for (auto& step : selected_anim.steps) {
-                _itoa_s(static_cast<int>(i++), buf, 10);
+            for (size_t i = 0; i < selected_anim.steps.size(); ++i) {
+                _itoa_s(static_cast<int>(i), buf, 10);
                 PushID(buf);
+
+                auto& step = selected_anim.steps[i];
 
                 // TODO: display image
 
@@ -239,6 +240,9 @@ void Application::run() {
                 InputFloat("Duration", &step.duration, 1.0f, 0.0f, "% .2f");
                 step.duration = std::clamp(step.duration, 0.0f, 1000.0f);
 
+                if (Button("Remove")) {
+                    selected_anim.steps.erase(selected_anim.steps.begin() + i);
+                }
                 PopID();
             }
 
