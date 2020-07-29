@@ -11,8 +11,6 @@ void Texture::load_from_file(const char* path) {
     w = img->w;
     h = img->h;
 
-    dimensions = {static_cast<float>(w), static_cast<float>(h)};
-
     glGenTextures(1, &id);
     glBindTexture(GL_TEXTURE_2D, id);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE,

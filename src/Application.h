@@ -5,11 +5,14 @@
 #include "Texture.h"
 
 struct Animation {
+    static const size_t MAX_NAME_LENGTH = 64;
+
     size_t num_steps = 0;
+    char name[MAX_NAME_LENGTH] = "\n";
 
     struct AnimationStepData {
-        uint sprite_id;
-        uint duration;
+        int sprite_id;
+        float duration;
     };
 
     std::vector<AnimationStepData> anim_steps;
@@ -29,17 +32,26 @@ class Application {
         u32 button_state;
     } mouse;
 
-    Shader sheet_shader;
     Shader default_shader;
+    SheetShader sheet_shader;
+
+    const uint ui_width = 500;
+    glm::ivec2 window_size = {ui_width, 500};
 
     // Animation Editor stuff
+    size_t selected_anim_index;
+
     std::vector<Animation> animations;
     Texture sprite_sheet;
 
-    glm::uvec2 sprite_dimensions;
+    glm::ivec2 sprite_dimensions;
     uint num_sprites;
 
     char* opened_path = nullptr;
+
+    char new_name_buf[Animation::MAX_NAME_LENGTH];
+
+    bool show_preview = false;
 
     void open_file();
 

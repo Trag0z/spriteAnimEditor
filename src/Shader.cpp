@@ -79,6 +79,25 @@ GLuint loadAndCompileShaderFromFile(const char* vShaderPath,
     return id;
 }
 
+Shader::Shader(const char* vert_path, const char* frag_path) {
+    id = loadAndCompileShaderFromFile(vert_path, frag_path);
+}
+
+void Shader::use() const { glUseProgram(id); }
+
+SheetShader::SheetShader(const char* vert_path, const char* frag_path)
+    : Shader(vert_path, frag_path) {
+    sprite_dimensions_loc = glGetUniformLocation(id, "sprite_dimensions");
+    sprite_index_loc = glGetUniformLocation(id, "sprite_index");
+}
+
+void SheetShader::set_sprite_dimensions(glm::ivec2 dimensions) {
+    glUniform2uiv(sprite_dimensions_loc, 1, (GLuint*)&dimensions);
+}
+void SheetShader::set_sprite_index(GLint index) {
+    glUniform1i(sprite_index_loc, index);
+}
+
 // TexturedShader::TexturedShader(const char* vert_path, const char* frag_path)
 //     : Shader(vert_path, frag_path) {
 //     GLuint indices[6] = {0, 1, 2, 2, 3, 0};

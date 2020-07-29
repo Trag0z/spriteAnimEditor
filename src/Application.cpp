@@ -19,7 +19,8 @@ void Application::init() {
     SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
     SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 2);
 
-    window = SDL_CreateWindow("AnimationEditor", 3870, 980, 500, 400,
+    window = SDL_CreateWindow("AnimationEditor", 3870, 980, window_size.x,
+                              window_size.y,
                               SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_OPENGL);
     SDL_assert_always(window);
 
@@ -56,9 +57,6 @@ void Application::init() {
         printf("Warning: Unable to set VSync! SDL Error: %s\n", SDL_GetError());
     }
 
-    glm::ivec2 window_size;
-    SDL_GetWindowSize(window, &window_size.x, &window_size.y);
-
     glViewport(0, 0, window_size.x, window_size.y);
     glEnable(GL_CULL_FACE);
     glFrontFace(GL_CCW);
@@ -87,10 +85,15 @@ void Application::init() {
         Shader("../src/shaders/default.vert", "../src/shaders/default.frag");
 
     sheet_shader =
-        Shader("../src/shaders/sheet.vert", "../src/shaders/sheet.frag");
+        SheetShader("../src/shaders/sheet.vert", "../src/shaders/sheet.frag");
 
     running = true;
 }
+
+// static int set_new_name(char dst[Animation::MAX_NAME_LENGTH],
+//                        const char src[Animation::MAX_NAME_LENGTH]) {
+//    strcpy_s(dst, Animation::MAX_NAME_LENGTH, src);
+//}
 
 void Application::run() {
     last_frame_start = frame_start;
@@ -136,6 +139,65 @@ void Application::run() {
         SameLine();
         if (Button("Save as...")) {
             // TODO
+        }
+
+        Checkbox("Preview animation", &show_preview);
+
+        PushItemWidth(100);
+        DragInt2("Sprite dimensions", (int*)&sprite_dimensions, 1.0f, 1, 0);
+
+        NewLine();
+        Text("Animations");
+
+        for (auto& anim : animations) {
+            if (TreeNode(anim.name)) {
+                if (Button("Set name")) {
+                    OpenPopup("Set name.");
+                }
+
+                if (BeginPopupModal("Set name.")) {
+                    InputTextWithHint("Name", "New name", new_name_buf,
+                                      Animation::MAX_NAME_LENGTH);
+                    if (Button("Set")) {
+                        strcpy_s(anim.name, new_name_buf);
+                        new_name_buf[0] = '\n';
+                    }
+                    EndPopup();
+                }
+
+                Separator();
+
+                char buf[32];
+                for (size_t i = 0; i < anim.anim_steps.size(); ++i) {
+                    _itoa_s(static_cast<int>(i), buf, 10);
+                    PushID(buf);
+
+                    auto& step = anim.anim_steps[i];
+                    // TODO: display image
+
+                    int new_sprite_id = static_cast<int>(step.sprite_id);
+                    InputInt("Sprite id", &new_sprite_id, 1);
+                    new_sprite_id = std::clamp(new_sprite_id, 0,
+                                               static_cast<int>(num_sprites));
+                    step.sprite_id = static_cast<uint>(new_sprite_id);
+
+                    InputFloat("Duration", &step.duration, 1.0f, 0.0f, "% .2f");
+                    step.duration = std::clamp(step.duration, 0.0f, 1000.0f);
+
+                    PopID();
+                }
+
+                if (Button("Add step")) {
+                    anim.anim_steps.push_back({0, 0.0f});
+                }
+                TreePop();
+            }
+        }
+
+        if (Button("Add")) {
+            Animation new_anim;
+            _itoa_s(static_cast<int>(animations.size()), new_anim.name, 10);
+            animations.push_back(new_anim);
         }
 
         End();
@@ -218,6 +280,10 @@ void Application::open_file() {
             glm::uvec2(greatest_common_divisor(sprite_sheet.w, sprite_sheet.h));
         num_sprites = (sprite_sheet.w / sprite_dimensions.x) *
                       (sprite_sheet.h / sprite_dimensions.y);
+
+        window_size = {sprite_sheet.w + ui_width,
+                       std::max(sprite_sheet.h, 500u)};
+        SDL_SetWindowSize(window, window_size.x, window_size.y);
     } else {
         // TODO: load binary file
     }

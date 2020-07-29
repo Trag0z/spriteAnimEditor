@@ -12,10 +12,19 @@ class Shader {
 
   public:
     Shader() {}
-    Shader(const char* vert_path, const char* frag_path) {
-        id = loadAndCompileShaderFromFile(vert_path, frag_path);
-    }
+    Shader(const char* vert_path, const char* frag_path);
 
   public:
-    void use() const { glUseProgram(id); };
+    void use() const;
+};
+
+class SheetShader : public Shader {
+    GLuint sprite_dimensions_loc, sprite_index_loc;
+
+  public:
+    SheetShader() {}
+    SheetShader(const char* vert_path, const char* frag_path);
+
+    void set_sprite_dimensions(glm::ivec2 dimensions);
+    void set_sprite_index(GLint index);
 };
