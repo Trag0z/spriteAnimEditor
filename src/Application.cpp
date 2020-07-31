@@ -561,4 +561,6 @@ void Application::save_file(bool get_new_path) {
 void Application::change_window_size() {
     SDL_SetWindowSize(window, window_size.x, window_size.y);
     glViewport(0, 0, window_size.x, window_size.y);
+
+    std::clamp(ui_size.y, default_ui_size.y, window_size.y);
 }

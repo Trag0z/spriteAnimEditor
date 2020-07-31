@@ -26,7 +26,8 @@ class Application {
 
     GLuint vao, vbo;
 
-    const glm::ivec2 ui_size = {300, 500};
+    const glm::ivec2 default_ui_size = {300, 500};
+    glm::ivec2 ui_size = default_ui_size;
     glm::ivec2 window_size = ui_size;
 
     // Animation Editor stuff
