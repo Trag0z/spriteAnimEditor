@@ -156,21 +156,21 @@ void Application::run() {
         }
         SameLine();
         if (Button("Save")) {
-            // TODO
+            save_file(false);
         }
         SameLine();
         if (Button("Save as...")) {
-            // TODO
+            save_file(true);
         }
 
         if (Checkbox("Preview animation", &show_preview)) {
             if (show_preview) {
                 window_size.y = std::max(
                     sprite_sheet.dimensions.y + sprite_dimensions.y, ui_size.y);
-                SDL_SetWindowSize(window, window_size.x, window_size.y);
+                change_window_size();
             } else {
                 window_size.y = std::max(sprite_sheet.dimensions.y, ui_size.y);
-                SDL_SetWindowSize(window, window_size.x, window_size.y);
+                change_window_size();
             }
         }
 
@@ -180,7 +180,7 @@ void Application::run() {
             if (show_preview) {
                 window_size.y = std::max(
                     sprite_sheet.dimensions.y + sprite_dimensions.y, ui_size.y);
-                SDL_SetWindowSize(window, window_size.x, window_size.y);
+                change_window_size();
             }
         }
 
@@ -231,7 +231,7 @@ void Application::run() {
                                   Animation::MAX_NAME_LENGTH);
                 if (Button("Set")) {
                     strcpy_s(selected_anim.name, new_name_buf);
-                    new_name_buf[0] = '\n';
+                    new_name_buf[0] = '\0';
                     CloseCurrentPopup();
                 }
                 EndPopup();
@@ -307,7 +307,8 @@ void Application::run() {
 
             sheet_shader.set_sprite_dimensions(
                 static_cast<glm::vec2>(sprite_dimensions));
-            sheet_shader.set_sprite_index(preview.get_sprite_index());
+            sheet_shader.set_sprite_index(
+                static_cast<GLint>(preview.get_sprite_index()));
             glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
         }
     }
@@ -323,81 +324,241 @@ void Application::run() {
         SDL_Delay(frame_delay - last_frame_time);
 }
 
+/*
+    The binary file format for animations is as follows:
+    u64             length of sprite sheet path (incl. /0)
+    char[]          sprite sheet path
+    u64             number of animations
+    Animation[]     in basically the same format as the struct
+ */
+
 void Application::open_file() {
-    { // Get path
+    // Get path
+    HRESULT hr =
+        CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+
+    SDL_assert_always(SUCCEEDED(hr));
+    IFileOpenDialog* pFileOpen;
+
+    hr = CoCreateInstance(CLSID_FileOpenDialog, NULL, CLSCTX_ALL,
+                          IID_IFileOpenDialog,
+                          reinterpret_cast<void**>(&pFileOpen));
+
+    SDL_assert_always(SUCCEEDED(hr));
+
+    COMDLG_FILTERSPEC file_type = {L".png, .anim", L"*.png; *.anim"};
+    pFileOpen->SetFileTypes(1, &file_type);
+
+    // Show the Open dialog box.
+    hr = pFileOpen->Show(NULL);
+
+    if (!SUCCEEDED(hr)) {
+        return;
+    }
+
+    // Get the file name from the dialog box.
+    IShellItem* pItem;
+    hr = pFileOpen->GetResult(&pItem);
+
+    SDL_assert_always(SUCCEEDED(hr));
+    PWSTR pszFilePath;
+    hr = pItem->GetDisplayName(SIGDN_FILESYSPATH, &pszFilePath);
+
+    size_t path_length = wcslen(pszFilePath) + 1;
+    char* new_path = new char[path_length];
+
+    wcstombs_s(nullptr, new_path, path_length, pszFilePath, path_length);
+
+    CoTaskMemFree(pszFilePath);
+
+    SDL_assert_always(SUCCEEDED(hr));
+
+    pItem->Release();
+    pFileOpen->Release();
+
+    CoUninitialize();
+
+    const char* extension = strrchr(new_path, '.');
+    SDL_assert_always(extension);
+
+    if (opened_path) {
+        delete[] opened_path;
+        opened_path = nullptr;
+    }
+    if (sprite_sheet_path) {
+        delete[] sprite_sheet_path;
+        sprite_sheet_path = nullptr;
+    }
+    animations.clear();
+
+    if (strcmp(extension, ".png") == 0) {
+        sprite_sheet_path = new char[path_length];
+        strncpy_s(sprite_sheet_path, path_length, new_path, path_length);
+
+        // Create new sheet from .png
+        sprite_sheet.load_from_file(sprite_sheet_path);
+
+        // Make a reasonable guess at the new sprite sheets sprite dimensions
+        sprite_dimensions = glm::uvec2(greatest_common_divisor(
+            sprite_sheet.dimensions.x, sprite_sheet.dimensions.y));
+    } else {
+        opened_path = new char[path_length];
+        strncpy_s(opened_path, path_length, new_path, path_length);
+
+        // Load animation from binary .anim file
+        SDL_RWops* file = SDL_RWFromFile(opened_path, "rb");
+        if (!file) {
+            printf("[ERROR] Could not open file \"%s\"; %s", opened_path,
+                   SDL_GetError());
+            SDL_TriggerBreakpoint();
+        }
+
+        u64 sheet_path_length;
+        SDL_RWread(file, &sheet_path_length, sizeof(u64), 1);
+
+        sprite_sheet_path = new char[sheet_path_length];
+        SDL_RWread(file, sprite_sheet_path, sizeof(char), sheet_path_length);
+
+        sprite_sheet.load_from_file(sprite_sheet_path);
+
+        SDL_RWread(file, value_ptr(sprite_dimensions), sizeof(glm::ivec2), 1);
+
+        u64 num_animations;
+        SDL_RWread(file, &num_animations, sizeof(u64), 1);
+
+        animations.reserve(num_animations);
+
+        for (size_t n_anim = 0; n_anim < num_animations; ++n_anim) {
+            Animation anim;
+            SDL_RWread(file, anim.name, sizeof(char),
+                       Animation::MAX_NAME_LENGTH);
+
+            u64 num_steps;
+            SDL_RWread(file, &num_steps, sizeof(u64), 1);
+
+            anim.steps.reserve(num_steps);
+
+            for (size_t n_step = 0; n_step < num_steps; ++n_step) {
+                Animation::AnimationStepData step;
+                SDL_RWread(file, &step.sprite_index, sizeof(s64), 1);
+                SDL_RWread(file, &step.duration, sizeof(float), 1);
+                anim.steps.push_back(step);
+            }
+            animations.push_back(anim);
+        }
+
+        SDL_RWclose(file);
+
+        // @CLEANUP: is it ok to only bind the texture here and never again?
+        glBindTexture(GL_TEXTURE_2D, sprite_sheet.id);
+    }
+
+    num_sprites = (sprite_sheet.dimensions.x / sprite_dimensions.x) *
+                  (sprite_sheet.dimensions.y / sprite_dimensions.y);
+
+    window_size.x = sprite_sheet.dimensions.x + ui_size.x;
+
+    if (show_preview) {
+        window_size.y = std::max(
+            sprite_sheet.dimensions.y + sprite_dimensions.y, ui_size.y);
+    } else {
+        window_size.y = std::max(sprite_sheet.dimensions.y, ui_size.y);
+    }
+
+    change_window_size();
+
+    if (animations.size() > 0) {
+        selected_anim_index = 0;
+        preview.set_animation(&animations[0]);
+    }
+}
+
+void Application::save_file(bool get_new_path) {
+    if (get_new_path || opened_path == nullptr) {
+        // Get a new path
         HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED |
                                               COINIT_DISABLE_OLE1DDE);
 
         SDL_assert_always(SUCCEEDED(hr));
-        IFileOpenDialog* pFileOpen;
+        IFileSaveDialog* pFileSave;
 
-        hr = CoCreateInstance(CLSID_FileOpenDialog, NULL, CLSCTX_ALL,
-                              IID_IFileOpenDialog,
-                              reinterpret_cast<void**>(&pFileOpen));
+        hr = CoCreateInstance(CLSID_FileSaveDialog, NULL, CLSCTX_ALL,
+                              IID_IFileSaveDialog,
+                              reinterpret_cast<void**>(&pFileSave));
 
         SDL_assert_always(SUCCEEDED(hr));
 
-        COMDLG_FILTERSPEC file_type = {L".png, .anim", L"*.png; *.anim"};
-        pFileOpen->SetFileTypes(1, &file_type);
+        COMDLG_FILTERSPEC file_type = {L".anim", L"*.anim"};
+        pFileSave->SetFileTypes(1, &file_type);
 
         // Show the Open dialog box.
-        hr = pFileOpen->Show(NULL);
-
-        if (!SUCCEEDED(hr)) {
-            return;
-        }
+        hr = pFileSave->Show(NULL);
 
         // Get the file name from the dialog box.
-        IShellItem* pItem;
-        hr = pFileOpen->GetResult(&pItem);
+        if (SUCCEEDED(hr)) {
+            IShellItem* pItem;
+            hr = pFileSave->GetResult(&pItem);
 
-        SDL_assert_always(SUCCEEDED(hr));
-        PWSTR pszFilePath;
-        hr = pItem->GetDisplayName(SIGDN_FILESYSPATH, &pszFilePath);
+            SDL_assert_always(SUCCEEDED(hr));
+            PWSTR pszFilePath;
+            hr = pItem->GetDisplayName(SIGDN_FILESYSPATH, &pszFilePath);
 
-        if (opened_path) {
-            delete[] opened_path;
+            // Copy path to opened_path
+            if (opened_path) {
+                delete[] opened_path;
+            }
+
+            size_t length = wcslen(pszFilePath) + 1;
+            opened_path = new char[length];
+
+            wcstombs_s(nullptr, opened_path, length, pszFilePath, length);
+
+            CoTaskMemFree(pszFilePath);
+
+            // Display the file name to the user.
+            SDL_assert_always(SUCCEEDED(hr));
+
+            pItem->Release();
+            pFileSave->Release();
+
+            CoUninitialize();
         }
-
-        size_t length = wcslen(pszFilePath) + 1;
-        opened_path = new char[length];
-
-        wcstombs_s(nullptr, opened_path, length, pszFilePath, length);
-
-        CoTaskMemFree(pszFilePath);
-
-        SDL_assert_always(SUCCEEDED(hr));
-
-        pItem->Release();
-        pFileOpen->Release();
-
-        CoUninitialize();
     }
 
-    const char* extension = strrchr(opened_path, '.');
-    SDL_assert_always(extension);
-
-    if (strcmp(extension, ".png") == 0) {
-        animations.clear();
-        sprite_sheet.load_from_file(opened_path);
-
-        sprite_dimensions = glm::uvec2(greatest_common_divisor(
-            sprite_sheet.dimensions.x, sprite_sheet.dimensions.y));
-        num_sprites = (sprite_sheet.dimensions.x / sprite_dimensions.x) *
-                      (sprite_sheet.dimensions.y / sprite_dimensions.y);
-
-        window_size = {sprite_sheet.dimensions.x + ui_size.x,
-                       std::max(sprite_sheet.dimensions.y, ui_size.y)};
-
-        if (show_preview) {
-            window_size.y += sprite_dimensions.y;
-        }
-
-        SDL_SetWindowSize(window, window_size.x, window_size.y);
-        glViewport(0, 0, window_size.x, window_size.y);
-    } else {
-        // TODO: load binary file
-
-        glBindTexture(GL_TEXTURE_2D, sprite_sheet.id);
+    // Write file
+    SDL_RWops* file = SDL_RWFromFile(opened_path, "wb");
+    if (!file) {
+        printf("[ERROR] Could not open file \"%s\"; %s", opened_path,
+               SDL_GetError());
+        SDL_TriggerBreakpoint();
     }
+
+    u64 sheet_path_length = strnlen_s(sprite_sheet_path, 256) + 1;
+    SDL_RWwrite(file, &sheet_path_length, sizeof(u64), 1);
+
+    SDL_RWwrite(file, sprite_sheet_path, sizeof(char), sheet_path_length);
+
+    SDL_RWwrite(file, value_ptr(sprite_dimensions), sizeof(glm::ivec2), 1);
+
+    u64 num_animations = animations.size();
+    SDL_RWwrite(file, &num_animations, sizeof(u64), 1);
+
+    for (auto& anim : animations) {
+        SDL_RWwrite(file, anim.name, sizeof(char), Animation::MAX_NAME_LENGTH);
+
+        u64 num_steps = anim.steps.size();
+        SDL_RWwrite(file, &num_steps, sizeof(u64), 1);
+
+        for (auto& step : anim.steps) {
+            SDL_RWwrite(file, &step.sprite_index, sizeof(s64), 1);
+            SDL_RWwrite(file, &step.duration, sizeof(float), 1);
+        }
+    }
+
+    SDL_RWclose(file);
+}
+
+void Application::change_window_size() {
+    SDL_SetWindowSize(window, window_size.x, window_size.y);
+    glViewport(0, 0, window_size.x, window_size.y);
 }

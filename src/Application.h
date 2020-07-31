@@ -41,10 +41,13 @@ class Application {
     uint num_sprites;
 
     char* opened_path = nullptr;
+    char* sprite_sheet_path = nullptr;
 
     bool show_preview = false;
 
     void open_file();
+    void save_file(bool get_new_path);
+    void change_window_size();
 
   public:
     void init();

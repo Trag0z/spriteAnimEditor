@@ -31,7 +31,7 @@ void AnimationPreview::update(float delta_time) {
     }
 }
 
-int AnimationPreview::get_sprite_index() {
+s64 AnimationPreview::get_sprite_index() {
     if (animation == nullptr || animation->steps.size() == 0) {
         return -1;
     }
