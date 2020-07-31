@@ -298,7 +298,7 @@ void Application::run() {
         glDrawArrays(GL_LINE_STRIP, 0, 4);
 
         // Render preview
-        if (selected_anim_index < animations.size()) {
+        if (show_preview && selected_anim_index < animations.size()) {
             sheet_shader.use();
             sheet_shader.set_projection(projection);
 

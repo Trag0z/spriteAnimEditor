@@ -3,7 +3,6 @@ NEXT:
 TODO:
 - saving
 - render lines on sheet
-- preview animation
 - open name input modal when adding animation?
 
 Bugs:               (@BUG)
