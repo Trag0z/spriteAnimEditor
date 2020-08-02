@@ -1,8 +1,6 @@
 NEXT:
 
 TODO:
-- saving
-- render lines on sheet
 - open name input modal when adding animation?
 - name input character set?
 - gap between preview and animation?

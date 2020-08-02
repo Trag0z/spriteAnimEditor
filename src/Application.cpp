@@ -84,6 +84,9 @@ void Application::init() {
     sheet_shader =
         SheetShader("../src/shaders/sheet.vert", "../src/shaders/sheet.frag");
 
+    line_shader =
+        LineShader("../src/shaders/sheet.vert", "../src/shaders/line.frag");
+
     // Init vertex buffer for triangle strip rendering
     struct {
         glm::vec2 pos, uv_coord;
@@ -173,6 +176,8 @@ void Application::run() {
                 change_window_size();
             }
         }
+
+        Checkbox("Lines between sprites", &show_lines);
 
         PushItemWidth(100);
         if (DragInt2("Sprite dimensions", (int*)&sprite_dimensions, 1.0f, 1,
@@ -311,6 +316,29 @@ void Application::run() {
                 static_cast<GLint>(preview.get_sprite_index()));
             glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
         }
+
+        // Render lines
+        if (show_lines) {
+            line_shader.use();
+            line_shader.set_projection(projection);
+            line_shader.set_sprite_dimensions(
+                static_cast<glm::vec2>(sprite_dimensions));
+            line_shader.set_color(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+
+            for (glm::i32 i = 0; i < static_cast<glm::i32>(num_sprites); ++i) {
+                glm::i32 sprites_per_row =
+                    sprite_sheet.dimensions.x / sprite_dimensions.x;
+
+                glm::vec2 position;
+                position.x = static_cast<float>(
+                    ui_size.x + i % sprites_per_row * sprite_dimensions.x);
+                position.y = static_cast<float>(i / sprites_per_row *
+                                                sprite_dimensions.y);
+
+                line_shader.set_render_position(position);
+                glDrawArrays(GL_LINE_LOOP, 0, 4);
+            }
+        }
     }
 
     ImGui::Render();
@@ -326,10 +354,16 @@ void Application::run() {
 
 /*
     The binary file format for animations is as follows:
-    u64             length of sprite sheet path (incl. /0)
+    u64             length of sprite sheet path (incl. terminating \0)
     char[]          sprite sheet path
+    glm::ivec2      sprite dimensions
     u64             number of animations
-    Animation[]     in basically the same format as the struct
+    Animation[]     data for the animations
+
+    Each Animation consists of:
+    char[64]        name of the animation
+    u64             number of animation steps
+    {s64, float}[]  animation step data
  */
 
 void Application::open_file() {
@@ -562,5 +596,5 @@ void Application::change_window_size() {
     SDL_SetWindowSize(window, window_size.x, window_size.y);
     glViewport(0, 0, window_size.x, window_size.y);
 
-    std::clamp(ui_size.y, default_ui_size.y, window_size.y);
+    ui_size.y = std::clamp(ui_size.y, default_ui_size.y, window_size.y);
 }

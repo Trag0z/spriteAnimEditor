@@ -107,3 +107,17 @@ void SheetShader::set_sprite_dimensions(glm::vec2 dimensions) const {
 void SheetShader::set_sprite_index(GLint index) const {
     glUniform1i(sprite_index_loc, index);
 }
+
+LineShader::LineShader(const char* vert_path, const char* frag_path)
+    : Shader(vert_path, frag_path) {
+    sprite_dimensions_loc = glGetUniformLocation(id, "sprite_dimensions");
+    color_loc = glGetUniformLocation(id, "color");
+}
+
+void LineShader::set_sprite_dimensions(glm::vec2 dimensions) const {
+    glUniform2fv(sprite_dimensions_loc, 1, value_ptr(dimensions));
+}
+
+void LineShader::set_color(glm::vec4 color) const {
+    glUniform4fv(color_loc, 1, value_ptr(color));
+}

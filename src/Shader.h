@@ -14,7 +14,6 @@ class Shader {
     Shader() {}
     Shader(const char* vert_path, const char* frag_path);
 
-  public:
     void use() const;
 
     void set_projection(glm::mat4 projection) const;
@@ -30,4 +29,15 @@ class SheetShader : public Shader {
 
     void set_sprite_dimensions(glm::vec2 dimensions) const;
     void set_sprite_index(GLint index) const;
+};
+
+class LineShader : public Shader {
+    GLuint sprite_dimensions_loc, color_loc;
+
+  public:
+    LineShader() {}
+    LineShader(const char* vert_path, const char* frag_path);
+
+    void set_sprite_dimensions(glm::vec2 dimensions) const;
+    void set_color(glm::vec4 color) const;
 };

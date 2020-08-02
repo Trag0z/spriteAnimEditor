@@ -21,6 +21,7 @@ class Application {
 
     Shader default_shader;
     SheetShader sheet_shader;
+    LineShader line_shader;
 
     glm::mat4 projection;
 
@@ -44,7 +45,8 @@ class Application {
     char* opened_path = nullptr;
     char* sprite_sheet_path = nullptr;
 
-    bool show_preview = false;
+    bool show_preview = true;
+    bool show_lines = true;
 
     void open_file();
     void save_file(bool get_new_path);
