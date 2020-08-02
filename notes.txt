@@ -1,4 +1,6 @@
 NEXT:
+- change preview position if sprite dimensions get changed in ui
+- +/- buttons forsprite diomensions widgets in ui
 
 TODO:
 - open name input modal when adding animation?

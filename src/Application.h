@@ -25,7 +25,7 @@ class Application {
 
     glm::mat4 projection;
 
-    GLuint vao, vbo;
+    GLuint sprite_vao, line_vao;
 
     const glm::ivec2 default_ui_size = {300, 500};
     glm::ivec2 ui_size = default_ui_size;

@@ -85,33 +85,54 @@ void Application::init() {
         SheetShader("../src/shaders/sheet.vert", "../src/shaders/sheet.frag");
 
     line_shader =
-        LineShader("../src/shaders/sheet.vert", "../src/shaders/line.frag");
+        LineShader("../src/shaders/line.vert", "../src/shaders/line.frag");
 
     // Init vertex buffer for triangle strip rendering
     struct {
         glm::vec2 pos, uv_coord;
-    } vertices[4];
+    } sprite_vertices[4];
 
-    vertices[0] = {{0.0f, 0.0f}, {0.0f, 1.0f}};
-    vertices[1] = {{1.0f, 0.0f}, {1.0f, 1.0f}};
-    vertices[2] = {{0.0f, 1.0f}, {0.0f, 0.0f}};
-    vertices[3] = {{1.0f, 1.0f}, {1.0f, 0.0f}};
+    sprite_vertices[0] = {{0.0f, 0.0f}, {0.0f, 1.0f}};
+    sprite_vertices[1] = {{1.0f, 0.0f}, {1.0f, 1.0f}};
+    sprite_vertices[2] = {{0.0f, 1.0f}, {0.0f, 0.0f}};
+    sprite_vertices[3] = {{1.0f, 1.0f}, {1.0f, 0.0f}};
 
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
+    glGenVertexArrays(1, &sprite_vao);
+    glBindVertexArray(sprite_vao);
 
-    // GLuint vbo;
+    GLuint vbo;
     glGenBuffers(1, &vbo);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(sprite_vertices), sprite_vertices,
+                 GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(vertices[0]),
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(sprite_vertices[0]),
                           (void*)0);
     glEnableVertexAttribArray(0);
 
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(vertices[0]),
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(sprite_vertices[0]),
                           (void*)sizeof(glm::vec2));
     glEnableVertexAttribArray(1);
+
+    // Init vertex buffer for line loop rendering
+    glm::vec2 line_vertices[4];
+
+    line_vertices[0] = {0.0f, 0.0f};
+    line_vertices[1] = {1.0f, 0.0f};
+    line_vertices[2] = {1.0f, 1.0f};
+    line_vertices[3] = {0.0f, 1.0f};
+
+    glGenVertexArrays(1, &line_vao);
+    glBindVertexArray(line_vao);
+
+    glGenBuffers(1, &vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(line_vertices), line_vertices,
+                 GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(line_vertices[0]),
+                          (void*)0);
+    glEnableVertexAttribArray(0);
 
     running = true;
 }
@@ -298,9 +319,8 @@ void Application::run() {
         default_shader.set_render_position(render_position);
 
         glBindTexture(GL_TEXTURE_2D, sprite_sheet.id);
-        glBindVertexArray(vao);
+        glBindVertexArray(sprite_vao);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-        glDrawArrays(GL_LINE_STRIP, 0, 4);
 
         // Render preview
         if (show_preview && selected_anim_index < animations.size()) {
@@ -324,6 +344,8 @@ void Application::run() {
             line_shader.set_sprite_dimensions(
                 static_cast<glm::vec2>(sprite_dimensions));
             line_shader.set_color(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+
+            glBindVertexArray(line_vao);
 
             for (glm::i32 i = 0; i < static_cast<glm::i32>(num_sprites); ++i) {
                 glm::i32 sprites_per_row =
