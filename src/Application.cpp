@@ -202,12 +202,21 @@ void Application::run() {
 
         PushItemWidth(100);
         if (DragInt2("Sprite dimensions", (int*)&sprite_dimensions, 1.0f, 1,
-                     0)) {
+                     std::max(sprite_sheet.dimensions.x,
+                              sprite_sheet.dimensions.y))) {
+            window_size.x =
+                std::max(sprite_sheet.dimensions.x, sprite_dimensions.x);
             if (show_preview) {
                 window_size.y = std::max(
-                    sprite_sheet.dimensions.y + sprite_dimensions.y, ui_size.y);
-                change_window_size();
+                    std::max(sprite_sheet.dimensions.y, sprite_dimensions.y) +
+                        sprite_dimensions.y,
+                    default_ui_size.y);
+            } else {
+                window_size.y = std::max(
+                    std::max(sprite_sheet.dimensions.y, sprite_dimensions.y),
+                    default_ui_size.y);
             }
+            change_window_size();
         }
 
         NewLine();
@@ -327,7 +336,8 @@ void Application::run() {
             sheet_shader.use();
             sheet_shader.set_projection(projection);
 
-            render_position.y += sprite_sheet.dimensions.y;
+            render_position.y +=
+                std::max(sprite_sheet.dimensions.y, sprite_dimensions.y);
             sheet_shader.set_render_position(render_position);
 
             sheet_shader.set_sprite_dimensions(
@@ -385,7 +395,7 @@ void Application::run() {
     Each Animation consists of:
     char[64]        name of the animation
     u64             number of animation steps
-    {s64, float}[]  animation step data
+    {s64, float}[]  animation step data (s64 sprite index, float duration)
  */
 
 void Application::open_file() {
