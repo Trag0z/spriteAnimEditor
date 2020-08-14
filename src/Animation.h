@@ -1,5 +1,6 @@
 #pragma once
 #include "pch.h"
+#include "Texture.h"
 #include "Types.h"
 
 struct Animation {
@@ -13,6 +14,20 @@ struct Animation {
     };
 
     std::vector<AnimationStepData> steps;
+};
+
+struct AnimationSheet {
+    char* sprite_path;
+    Texture sprite_sheet;
+    size_t num_sprites;
+    glm::ivec2 sprite_dimension;
+
+    std::vector<Animation> animations;
+
+    void save_to_text_file(const char* path) const;
+    void load_from_text_file(const char* path);
+
+    static const size_t MAX_SPRITE_PATH_LENGTH = 256;
 };
 
 class AnimationPreview {
