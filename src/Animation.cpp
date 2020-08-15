@@ -58,44 +58,42 @@ void AnimationSheet::load_from_text_file(const char* path) {
     s64 file_size = SDL_RWsize(file_ptr);
     // NOTE: This is never freed! Can we free this if the pointer is advanced?
     char* file_buf = new char[file_size];
+    char* next_char = file_buf;
 
-    SDL_RWread(file_ptr, file_buf, sizeof(char), file_size);
+    SDL_RWread(file_ptr, next_char, sizeof(char), file_size);
 
     const size_t WORD_BUF_SIZE = MAX_SPRITE_PATH_LENGTH;
     char word_buf[WORD_BUF_SIZE];
 
-    // Reads characters from file_buf into word_buf (while moving file_buf)
+    // Reads characters from next_char into word_buf (while moving next_char)
     // until delim is found or end of file is reached. Returns number of
     // characters written (including deliminating \0 character).
-    auto read_word = [&file_buf, WORD_BUF_SIZE](char* dst_buf,
-                                                char delim = '\n') -> size_t {
-        while (*file_buf == '#') {
+    auto read_word = [&next_char, WORD_BUF_SIZE](char* dst_buf,
+                                                 char delim = '\n') -> size_t {
+        while (*next_char == '#') {
             // Comment, skip line
-            while (*file_buf != '\n') {
-                if (*file_buf == '\0') {
-                    // @CLEANUP: Remove
-                    SDL_TriggerBreakpoint();
+            while (*next_char != '\n') {
+                if (*next_char == '\0') {
                     return 0;
                 }
-                ++file_buf;
+                ++next_char;
             }
         }
-        if (*file_buf == '\n') {
-            ++file_buf;
+        if (*next_char == '\n') {
+            ++next_char;
         }
 
         size_t num_chars_written = 0;
-        while (*file_buf != delim && num_chars_written != WORD_BUF_SIZE - 1) {
-            *dst_buf = *file_buf;
+        while (*next_char != delim && num_chars_written != WORD_BUF_SIZE - 1) {
+            *dst_buf = *next_char;
             dst_buf++;
-            file_buf++;
+            next_char++;
             ++num_chars_written;
-            // SDL_assert_always(*file_buf != '\0');
         }
-        // Add deliminating null character and advance file_buf pointer
+        // Add deliminating null character and advance next_char pointer
         SDL_assert_always(num_chars_written < WORD_BUF_SIZE);
         *dst_buf = '\0';
-        ++file_buf;
+        ++next_char;
         return ++num_chars_written;
     };
 
@@ -145,6 +143,8 @@ void AnimationSheet::load_from_text_file(const char* path) {
         }
         animations.push_back(anim);
     }
+
+    delete[] file_buf;
 
     SDL_RWclose(file_ptr);
 }
