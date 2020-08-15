@@ -38,13 +38,7 @@ class Application {
 
     AnimationPreview preview;
 
-    Texture sprite_sheet;
-
-    glm::ivec2 sprite_dimensions;
-    uint num_sprites;
-
     char* opened_path = nullptr;
-    char* sprite_sheet_path = nullptr;
 
     bool show_preview = true;
     bool show_lines = true;

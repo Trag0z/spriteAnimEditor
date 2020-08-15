@@ -1,7 +1,6 @@
 #pragma once
 #include "pch.h"
 #include "Application.h"
-#include "Util.h"
 
 #ifndef NDEBUG
 #include "DebugCallback.h"
@@ -189,11 +188,13 @@ void Application::run() {
 
         if (Checkbox("Preview animation", &show_preview)) {
             if (show_preview) {
-                window_size.y = std::max(
-                    sprite_sheet.dimensions.y + sprite_dimensions.y, ui_size.y);
+                window_size.y = std::max(anim_sheet.sprite_sheet.dimensions.y +
+                                             anim_sheet.sprite_dimensions.y,
+                                         ui_size.y);
                 change_window_size();
             } else {
-                window_size.y = std::max(sprite_sheet.dimensions.y, ui_size.y);
+                window_size.y =
+                    std::max(anim_sheet.sprite_sheet.dimensions.y, ui_size.y);
                 change_window_size();
             }
         }
@@ -201,20 +202,23 @@ void Application::run() {
         Checkbox("Lines between sprites", &show_lines);
 
         PushItemWidth(100);
-        if (DragInt2("Sprite dimensions", (int*)&sprite_dimensions, 1.0f, 1,
-                     std::max(sprite_sheet.dimensions.x,
-                              sprite_sheet.dimensions.y))) {
-            window_size.x =
-                std::max(sprite_sheet.dimensions.x, sprite_dimensions.x);
+        if (DragInt2("Sprite dimensions", (int*)&anim_sheet.sprite_dimensions,
+                     1.0f, 1,
+                     std::max(anim_sheet.sprite_sheet.dimensions.x,
+                              anim_sheet.sprite_sheet.dimensions.y))) {
+            window_size.x = std::max(anim_sheet.sprite_sheet.dimensions.x,
+                                     anim_sheet.sprite_dimensions.x);
             if (show_preview) {
-                window_size.y = std::max(
-                    std::max(sprite_sheet.dimensions.y, sprite_dimensions.y) +
-                        sprite_dimensions.y,
-                    default_ui_size.y);
+                window_size.y =
+                    std::max(std::max(anim_sheet.sprite_sheet.dimensions.y,
+                                      anim_sheet.sprite_dimensions.y) +
+                                 anim_sheet.sprite_dimensions.y,
+                             default_ui_size.y);
             } else {
-                window_size.y = std::max(
-                    std::max(sprite_sheet.dimensions.y, sprite_dimensions.y),
-                    default_ui_size.y);
+                window_size.y =
+                    std::max(std::max(anim_sheet.sprite_sheet.dimensions.y,
+                                      anim_sheet.sprite_dimensions.y),
+                             default_ui_size.y);
             }
             change_window_size();
         }
@@ -284,13 +288,9 @@ void Application::run() {
 
                 auto& step = selected_anim.steps[i];
 
-                // TODO: display image
-
-                int new_sprite_id = static_cast<int>(step.sprite_index);
-                InputInt("Sprite id", &new_sprite_id, 1);
-                new_sprite_id =
-                    std::clamp(new_sprite_id, 0, static_cast<int>(num_sprites));
-                step.sprite_index = static_cast<uint>(new_sprite_id);
+                InputInt("Sprite id", &step.sprite_index, 1);
+                step.sprite_index = std::clamp(
+                    step.sprite_index, 0, static_cast<int>(anim_sheet.num_sprites));
 
                 InputFloat("Duration", &step.duration, 1.0f, 0.0f, "% .2f");
                 step.duration = std::clamp(step.duration, 0.0f, 1000.0f);
@@ -320,7 +320,7 @@ void Application::run() {
     glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    if (sprite_sheet.id != 0) {
+    if (anim_sheet.sprite_sheet.id != 0) {
         // Render sprite sheet
         default_shader.use();
         projection = glm::ortho(0.0f, static_cast<float>(window_size.x),
@@ -330,7 +330,7 @@ void Application::run() {
         glm::vec2 render_position = {static_cast<float>(ui_size.x), 0.0f};
         default_shader.set_render_position(render_position);
 
-        glBindTexture(GL_TEXTURE_2D, sprite_sheet.id);
+        glBindTexture(GL_TEXTURE_2D, anim_sheet.sprite_sheet.id);
         glBindVertexArray(sprite_vao);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
@@ -340,12 +340,12 @@ void Application::run() {
             sheet_shader.use();
             sheet_shader.set_projection(projection);
 
-            render_position.y +=
-                std::max(sprite_sheet.dimensions.y, sprite_dimensions.y);
+            render_position.y += std::max(anim_sheet.sprite_sheet.dimensions.y,
+                                          anim_sheet.sprite_dimensions.y);
             sheet_shader.set_render_position(render_position);
 
             sheet_shader.set_sprite_dimensions(
-                static_cast<glm::vec2>(sprite_dimensions));
+                static_cast<glm::vec2>(anim_sheet.sprite_dimensions));
             sheet_shader.set_sprite_index(
                 static_cast<GLint>(preview.get_sprite_index()));
             glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -356,20 +356,23 @@ void Application::run() {
             line_shader.use();
             line_shader.set_projection(projection);
             line_shader.set_sprite_dimensions(
-                static_cast<glm::vec2>(sprite_dimensions));
+                static_cast<glm::vec2>(anim_sheet.sprite_dimensions));
             line_shader.set_color(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
 
             glBindVertexArray(line_vao);
 
-            for (glm::i32 i = 0; i < static_cast<glm::i32>(num_sprites); ++i) {
+            for (glm::i32 i = 0;
+                 i < static_cast<glm::i32>(anim_sheet.num_sprites); ++i) {
                 glm::i32 sprites_per_row =
-                    sprite_sheet.dimensions.x / sprite_dimensions.x;
+                    anim_sheet.sprite_sheet.dimensions.x /
+                    anim_sheet.sprite_dimensions.x;
 
                 glm::vec2 position;
                 position.x = static_cast<float>(
-                    ui_size.x + i % sprites_per_row * sprite_dimensions.x);
+                    ui_size.x +
+                    i % sprites_per_row * anim_sheet.sprite_dimensions.x);
                 position.y = static_cast<float>(i / sprites_per_row *
-                                                sprite_dimensions.y);
+                                                anim_sheet.sprite_dimensions.y);
 
                 line_shader.set_render_position(position);
                 glDrawArrays(GL_LINE_LOOP, 0, 4);
@@ -453,86 +456,74 @@ void Application::open_file() {
 
     if (opened_path) {
         delete[] opened_path;
-        opened_path = nullptr;
     }
-    if (sprite_sheet_path) {
-        delete[] sprite_sheet_path;
-        sprite_sheet_path = nullptr;
-    }
-    anim_sheet.animations.clear();
 
     if (strcmp(extension, ".png") == 0) {
-        sprite_sheet_path = new char[path_length];
-        strncpy_s(sprite_sheet_path, path_length, new_path, path_length);
-
-        // Create new sheet from .png
-        sprite_sheet.load_from_file(sprite_sheet_path);
-
-        // Make a reasonable guess at the new sprite sheets sprite dimensions
-        sprite_dimensions = glm::uvec2(greatest_common_divisor(
-            sprite_sheet.dimensions.x, sprite_sheet.dimensions.y));
+        anim_sheet.create_new_from_png(new_path);
     } else {
         opened_path = new char[path_length];
         strncpy_s(opened_path, path_length, new_path, path_length);
 
-        // Load animation from binary .anim file
-        SDL_RWops* file = SDL_RWFromFile(opened_path, "rb");
-        if (!file) {
-            printf("[ERROR] Could not open file \"%s\"; %s", opened_path,
-                   SDL_GetError());
-            SDL_TriggerBreakpoint();
-        }
+        anim_sheet.load_from_text_file(new_path);
 
-        u64 sheet_path_length;
-        SDL_RWread(file, &sheet_path_length, sizeof(u64), 1);
+        // // Load animation from binary .anim file
+        // SDL_RWops* file = SDL_RWFromFile(opened_path, "rb");
+        // if (!file) {
+        //     printf("[ERROR] Could not open file \"%s\"; %s", opened_path,
+        //            SDL_GetError());
+        //     SDL_TriggerBreakpoint();
+        // }
 
-        sprite_sheet_path = new char[sheet_path_length];
-        SDL_RWread(file, sprite_sheet_path, sizeof(char), sheet_path_length);
+        // u64 sheet_path_length;
+        // SDL_RWread(file, &sheet_path_length, sizeof(u64), 1);
 
-        sprite_sheet.load_from_file(sprite_sheet_path);
+        // sprite_sheet_path = new char[sheet_path_length];
+        // SDL_RWread(file, sprite_sheet_path, sizeof(char), sheet_path_length);
 
-        SDL_RWread(file, value_ptr(sprite_dimensions), sizeof(glm::ivec2), 1);
+        // sprite_sheet.load_from_file(sprite_sheet_path);
 
-        u64 num_animations;
-        SDL_RWread(file, &num_animations, sizeof(u64), 1);
+        // SDL_RWread(file, value_ptr(sprite_dimensions), sizeof(glm::ivec2),
+        // 1);
 
-        anim_sheet.animations.reserve(num_animations);
+        // u64 num_animations;
+        // SDL_RWread(file, &num_animations, sizeof(u64), 1);
 
-        for (size_t n_anim = 0; n_anim < num_animations; ++n_anim) {
-            Animation anim;
-            SDL_RWread(file, anim.name, sizeof(char),
-                       Animation::MAX_NAME_LENGTH);
+        // anim_sheet.animations.reserve(num_animations);
 
-            u64 num_steps;
-            SDL_RWread(file, &num_steps, sizeof(u64), 1);
+        // for (size_t n_anim = 0; n_anim < num_animations; ++n_anim) {
+        //     Animation anim;
+        //     SDL_RWread(file, anim.name, sizeof(char),
+        //                Animation::MAX_NAME_LENGTH);
 
-            anim.steps.reserve(num_steps);
+        //     u64 num_steps;
+        //     SDL_RWread(file, &num_steps, sizeof(u64), 1);
 
-            for (size_t n_step = 0; n_step < num_steps; ++n_step) {
-                Animation::AnimationStepData step;
-                SDL_RWread(file, &step.sprite_index, sizeof(s64), 1);
-                SDL_RWread(file, &step.duration, sizeof(float), 1);
-                anim.steps.push_back(step);
-            }
-            anim_sheet.animations.push_back(anim);
-        }
+        //     anim.steps.reserve(num_steps);
 
-        SDL_RWclose(file);
+        //     for (size_t n_step = 0; n_step < num_steps; ++n_step) {
+        //         Animation::AnimationStepData step;
+        //         SDL_RWread(file, &step.sprite_index, sizeof(s64), 1);
+        //         SDL_RWread(file, &step.duration, sizeof(float), 1);
+        //         anim.steps.push_back(step);
+        //     }
+        //     anim_sheet.animations.push_back(anim);
+        // }
+
+        // SDL_RWclose(file);
 
         // @CLEANUP: is it ok to only bind the texture here and never again?
-        glBindTexture(GL_TEXTURE_2D, sprite_sheet.id);
+        glBindTexture(GL_TEXTURE_2D, anim_sheet.sprite_sheet.id);
     }
 
-    num_sprites = (sprite_sheet.dimensions.x / sprite_dimensions.x) *
-                  (sprite_sheet.dimensions.y / sprite_dimensions.y);
-
-    window_size.x = sprite_sheet.dimensions.x + ui_size.x;
+    window_size.x = anim_sheet.sprite_sheet.dimensions.x + ui_size.x;
 
     if (show_preview) {
-        window_size.y = std::max(
-            sprite_sheet.dimensions.y + sprite_dimensions.y, ui_size.y);
+        window_size.y = std::max(anim_sheet.sprite_sheet.dimensions.y +
+                                     anim_sheet.sprite_dimensions.y,
+                                 ui_size.y);
     } else {
-        window_size.y = std::max(sprite_sheet.dimensions.y, ui_size.y);
+        window_size.y =
+            std::max(anim_sheet.sprite_sheet.dimensions.y, ui_size.y);
     }
 
     change_window_size();
@@ -603,12 +594,13 @@ void Application::save_file(bool get_new_path) {
         SDL_TriggerBreakpoint();
     }
 
-    u64 sheet_path_length = strnlen_s(sprite_sheet_path, 256) + 1;
+    u64 sheet_path_length = strnlen_s(anim_sheet.sprite_path, 256) + 1;
     SDL_RWwrite(file, &sheet_path_length, sizeof(u64), 1);
 
-    SDL_RWwrite(file, sprite_sheet_path, sizeof(char), sheet_path_length);
+    SDL_RWwrite(file, anim_sheet.sprite_path, sizeof(char), sheet_path_length);
 
-    SDL_RWwrite(file, value_ptr(sprite_dimensions), sizeof(glm::ivec2), 1);
+    SDL_RWwrite(file, value_ptr(anim_sheet.sprite_dimensions),
+                sizeof(glm::ivec2), 1);
 
     u64 num_animations = anim_sheet.animations.size();
     SDL_RWwrite(file, &num_animations, sizeof(u64), 1);

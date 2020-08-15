@@ -26,6 +26,7 @@ struct AnimationSheet {
 
     void save_to_text_file(const char* path) const;
     void load_from_text_file(const char* path);
+    void create_new_from_png(const char* path);
 
     static const size_t MAX_SPRITE_PATH_LENGTH = 256;
 };

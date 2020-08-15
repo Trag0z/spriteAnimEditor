@@ -1,6 +1,7 @@
 #pragma once
 #include "pch.h"
 #include "Animation.h"
+#include "Util.h"
 
 /*
     AnimationSheet text file format:
@@ -140,6 +141,24 @@ void AnimationSheet::load_from_text_file(const char* path) {
     }
 
     SDL_RWclose(file_ptr);
+}
+
+void AnimationSheet::create_new_from_png(const char* path) {
+    if (sprite_path) {
+        delete[] sprite_path;
+    }
+    size_t length = strnlen_s(path, MAX_SPRITE_PATH_LENGTH) + 1;
+    sprite_path = new char[length];
+    strcpy_s(sprite_path, length, path);
+
+    sprite_sheet.load_from_file(sprite_path);
+
+    // Make a reasonable guess at the new sprite sheets sprite dimensions
+    sprite_dimensions = glm::uvec2(greatest_common_divisor(
+        sprite_sheet.dimensions.x, sprite_sheet.dimensions.y));
+
+    num_sprites = (sprite_sheet.dimensions.x / sprite_dimensions.x) *
+                  (sprite_sheet.dimensions.y / sprite_dimensions.y);
 }
 
 void AnimationPreview::set_animation(const Animation* anim) {
