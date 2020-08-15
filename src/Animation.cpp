@@ -32,24 +32,22 @@ void AnimationSheet::save_to_text_file(const char* path) const {
                   sprite_path, sprite_dimensions.x, sprite_dimensions.y,
                   animations.size());
     SDL_assert(length != -1);
-    SDL_RWwrite(file_ptr, text_buf, sizeof(char), length + 1);
+    SDL_RWwrite(file_ptr, text_buf, sizeof(char), length);
 
     for (const auto& anim : animations) {
         length = sprintf_s(text_buf, "# Animation\n%s\n%zu\n# Steps\n",
                            anim.name, anim.steps.size());
         SDL_assert(length != -1);
-        SDL_RWwrite(file_ptr, text_buf, sizeof(char), length + 1);
+        SDL_RWwrite(file_ptr, text_buf, sizeof(char), length);
 
         for (const auto& step : anim.steps) {
             length = sprintf_s(text_buf, "%d\n%f\n", step.sprite_index,
                                step.duration);
             SDL_assert(length != -1);
-            SDL_RWwrite(file_ptr, text_buf, sizeof(char), length + 1);
+            SDL_RWwrite(file_ptr, text_buf, sizeof(char), length);
         }
     }
 
-    // @CLEANUP: Is this necessary?
-    SDL_RWwrite(file_ptr, "\0", sizeof(char), 1);
     SDL_RWclose(file_ptr);
 }
 
@@ -58,6 +56,7 @@ void AnimationSheet::load_from_text_file(const char* path) {
     SDL_assert_always(file_ptr);
 
     s64 file_size = SDL_RWsize(file_ptr);
+    // NOTE: This is never freed! Can we free this if the pointer is advanced?
     char* file_buf = new char[file_size];
 
     SDL_RWread(file_ptr, file_buf, sizeof(char), file_size);
@@ -74,15 +73,22 @@ void AnimationSheet::load_from_text_file(const char* path) {
             // Comment, skip line
             while (*file_buf != '\n') {
                 if (*file_buf == '\0') {
+                    // @CLEANUP: Remove
+                    SDL_TriggerBreakpoint();
                     return 0;
                 }
                 ++file_buf;
             }
         }
+        if (*file_buf == '\n') {
+            ++file_buf;
+        }
 
         size_t num_chars_written = 0;
         while (*file_buf != delim && num_chars_written != WORD_BUF_SIZE - 1) {
-            *dst_buf++ = *file_buf++;
+            *dst_buf = *file_buf;
+            dst_buf++;
+            file_buf++;
             ++num_chars_written;
             // SDL_assert_always(*file_buf != '\0');
         }
@@ -90,7 +96,7 @@ void AnimationSheet::load_from_text_file(const char* path) {
         SDL_assert_always(num_chars_written < WORD_BUF_SIZE);
         *dst_buf = '\0';
         ++file_buf;
-        return num_chars_written;
+        return ++num_chars_written;
     };
 
     // Read sprite sheet path
@@ -159,6 +165,8 @@ void AnimationSheet::create_new_from_png(const char* path) {
 
     num_sprites = (sprite_sheet.dimensions.x / sprite_dimensions.x) *
                   (sprite_sheet.dimensions.y / sprite_dimensions.y);
+
+    animations.clear();
 }
 
 void AnimationPreview::set_animation(const Animation* anim) {

@@ -289,8 +289,9 @@ void Application::run() {
                 auto& step = selected_anim.steps[i];
 
                 InputInt("Sprite id", &step.sprite_index, 1);
-                step.sprite_index = std::clamp(
-                    step.sprite_index, 0, static_cast<int>(anim_sheet.num_sprites));
+                step.sprite_index =
+                    std::clamp(step.sprite_index, 0,
+                               static_cast<int>(anim_sheet.num_sprites));
 
                 InputFloat("Duration", &step.duration, 1.0f, 0.0f, "% .2f");
                 step.duration = std::clamp(step.duration, 0.0f, 1000.0f);
@@ -391,20 +392,6 @@ void Application::run() {
         SDL_Delay(frame_delay - last_frame_time);
 }
 
-/*
-    The binary file format for anim_sheet.animations is as follows:
-    u64             length of sprite sheet path (incl. terminating \0)
-    char[]          sprite sheet path
-    glm::ivec2      sprite dimensions
-    u64             number of anim_sheet.animations
-    Animation[]     data for the anim_sheet.animations
-
-    Each Animation consists of:
-    char[64]        name of the animation
-    u64             number of animation steps
-    {s64, float}[]  animation step data (s64 sprite index, float duration)
- */
-
 void Application::open_file() {
     // Get path
     HRESULT hr =
@@ -456,6 +443,7 @@ void Application::open_file() {
 
     if (opened_path) {
         delete[] opened_path;
+    opened_path = nullptr;
     }
 
     if (strcmp(extension, ".png") == 0) {
@@ -465,51 +453,6 @@ void Application::open_file() {
         strncpy_s(opened_path, path_length, new_path, path_length);
 
         anim_sheet.load_from_text_file(new_path);
-
-        // // Load animation from binary .anim file
-        // SDL_RWops* file = SDL_RWFromFile(opened_path, "rb");
-        // if (!file) {
-        //     printf("[ERROR] Could not open file \"%s\"; %s", opened_path,
-        //            SDL_GetError());
-        //     SDL_TriggerBreakpoint();
-        // }
-
-        // u64 sheet_path_length;
-        // SDL_RWread(file, &sheet_path_length, sizeof(u64), 1);
-
-        // sprite_sheet_path = new char[sheet_path_length];
-        // SDL_RWread(file, sprite_sheet_path, sizeof(char), sheet_path_length);
-
-        // sprite_sheet.load_from_file(sprite_sheet_path);
-
-        // SDL_RWread(file, value_ptr(sprite_dimensions), sizeof(glm::ivec2),
-        // 1);
-
-        // u64 num_animations;
-        // SDL_RWread(file, &num_animations, sizeof(u64), 1);
-
-        // anim_sheet.animations.reserve(num_animations);
-
-        // for (size_t n_anim = 0; n_anim < num_animations; ++n_anim) {
-        //     Animation anim;
-        //     SDL_RWread(file, anim.name, sizeof(char),
-        //                Animation::MAX_NAME_LENGTH);
-
-        //     u64 num_steps;
-        //     SDL_RWread(file, &num_steps, sizeof(u64), 1);
-
-        //     anim.steps.reserve(num_steps);
-
-        //     for (size_t n_step = 0; n_step < num_steps; ++n_step) {
-        //         Animation::AnimationStepData step;
-        //         SDL_RWread(file, &step.sprite_index, sizeof(s64), 1);
-        //         SDL_RWread(file, &step.duration, sizeof(float), 1);
-        //         anim.steps.push_back(step);
-        //     }
-        //     anim_sheet.animations.push_back(anim);
-        // }
-
-        // SDL_RWclose(file);
 
         // @CLEANUP: is it ok to only bind the texture here and never again?
         glBindTexture(GL_TEXTURE_2D, anim_sheet.sprite_sheet.id);
@@ -586,38 +529,7 @@ void Application::save_file(bool get_new_path) {
         }
     }
 
-    // Write file
-    SDL_RWops* file = SDL_RWFromFile(opened_path, "wb");
-    if (!file) {
-        printf("[ERROR] Could not open file \"%s\"; %s", opened_path,
-               SDL_GetError());
-        SDL_TriggerBreakpoint();
-    }
-
-    u64 sheet_path_length = strnlen_s(anim_sheet.sprite_path, 256) + 1;
-    SDL_RWwrite(file, &sheet_path_length, sizeof(u64), 1);
-
-    SDL_RWwrite(file, anim_sheet.sprite_path, sizeof(char), sheet_path_length);
-
-    SDL_RWwrite(file, value_ptr(anim_sheet.sprite_dimensions),
-                sizeof(glm::ivec2), 1);
-
-    u64 num_animations = anim_sheet.animations.size();
-    SDL_RWwrite(file, &num_animations, sizeof(u64), 1);
-
-    for (auto& anim : anim_sheet.animations) {
-        SDL_RWwrite(file, anim.name, sizeof(char), Animation::MAX_NAME_LENGTH);
-
-        u64 num_steps = anim.steps.size();
-        SDL_RWwrite(file, &num_steps, sizeof(u64), 1);
-
-        for (auto& step : anim.steps) {
-            SDL_RWwrite(file, &step.sprite_index, sizeof(s64), 1);
-            SDL_RWwrite(file, &step.duration, sizeof(float), 1);
-        }
-    }
-
-    SDL_RWclose(file);
+    anim_sheet.save_to_text_file(opened_path);
 }
 
 void Application::change_window_size() {
