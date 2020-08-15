@@ -19,8 +19,8 @@ struct Animation {
 struct AnimationSheet {
     char* sprite_path;
     Texture sprite_sheet;
+    glm::ivec2 sprite_dimensions;
     size_t num_sprites;
-    glm::ivec2 sprite_dimension;
 
     std::vector<Animation> animations;
 
