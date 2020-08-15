@@ -224,18 +224,19 @@ void Application::run() {
 
         static const char* current_item_name;
 
-        if (selected_anim_index < animations.size()) {
-            current_item_name = animations[selected_anim_index].name;
+        if (selected_anim_index < anim_sheet.animations.size()) {
+            current_item_name = anim_sheet.animations[selected_anim_index].name;
         } else {
             current_item_name = "none";
         }
 
         if (BeginCombo("", current_item_name)) {
-            for (size_t i = 0; i < animations.size(); ++i) {
+            for (size_t i = 0; i < anim_sheet.animations.size(); ++i) {
                 bool is_selected = (selected_anim_index == i);
-                if (Selectable(animations[i].name, is_selected)) {
+                if (Selectable(anim_sheet.animations[i].name, is_selected)) {
                     selected_anim_index = i;
-                    preview.set_animation(&animations[selected_anim_index]);
+                    preview.set_animation(
+                        &anim_sheet.animations[selected_anim_index]);
                 }
             }
             EndCombo();
@@ -243,21 +244,23 @@ void Application::run() {
         SameLine();
         if (Button("Add")) {
             Animation new_anim;
-            _itoa_s(static_cast<int>(animations.size()), new_anim.name, 10);
-            animations.push_back(new_anim);
-            selected_anim_index = animations.size() - 1;
+            _itoa_s(static_cast<int>(anim_sheet.animations.size()),
+                    new_anim.name, 10);
+            anim_sheet.animations.push_back(new_anim);
+            selected_anim_index = anim_sheet.animations.size() - 1;
         }
         SameLine();
         if (Button("Remove")) {
-            animations.erase(animations.begin() + selected_anim_index);
+            anim_sheet.animations.erase(anim_sheet.animations.begin() +
+                                        selected_anim_index);
         }
         SameLine();
         if (Button("Set name")) {
             OpenPopup("Set name.");
         }
 
-        if (selected_anim_index < animations.size()) {
-            auto& selected_anim = animations[selected_anim_index];
+        if (selected_anim_index < anim_sheet.animations.size()) {
+            auto& selected_anim = anim_sheet.animations[selected_anim_index];
 
             SetNextItemWidth(300);
             if (BeginPopupModal("Set name.")) {
@@ -315,7 +318,7 @@ void Application::run() {
 
     // Rendering
     glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT);
 
     if (sprite_sheet.id != 0) {
         // Render sprite sheet
@@ -332,7 +335,8 @@ void Application::run() {
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
         // Render preview
-        if (show_preview && selected_anim_index < animations.size()) {
+        if (show_preview &&
+            selected_anim_index < anim_sheet.animations.size()) {
             sheet_shader.use();
             sheet_shader.set_projection(projection);
 
@@ -385,12 +389,12 @@ void Application::run() {
 }
 
 /*
-    The binary file format for animations is as follows:
+    The binary file format for anim_sheet.animations is as follows:
     u64             length of sprite sheet path (incl. terminating \0)
     char[]          sprite sheet path
     glm::ivec2      sprite dimensions
-    u64             number of animations
-    Animation[]     data for the animations
+    u64             number of anim_sheet.animations
+    Animation[]     data for the anim_sheet.animations
 
     Each Animation consists of:
     char[64]        name of the animation
@@ -455,7 +459,7 @@ void Application::open_file() {
         delete[] sprite_sheet_path;
         sprite_sheet_path = nullptr;
     }
-    animations.clear();
+    anim_sheet.animations.clear();
 
     if (strcmp(extension, ".png") == 0) {
         sprite_sheet_path = new char[path_length];
@@ -492,7 +496,7 @@ void Application::open_file() {
         u64 num_animations;
         SDL_RWread(file, &num_animations, sizeof(u64), 1);
 
-        animations.reserve(num_animations);
+        anim_sheet.animations.reserve(num_animations);
 
         for (size_t n_anim = 0; n_anim < num_animations; ++n_anim) {
             Animation anim;
@@ -510,7 +514,7 @@ void Application::open_file() {
                 SDL_RWread(file, &step.duration, sizeof(float), 1);
                 anim.steps.push_back(step);
             }
-            animations.push_back(anim);
+            anim_sheet.animations.push_back(anim);
         }
 
         SDL_RWclose(file);
@@ -533,9 +537,9 @@ void Application::open_file() {
 
     change_window_size();
 
-    if (animations.size() > 0) {
+    if (anim_sheet.animations.size() > 0) {
         selected_anim_index = 0;
-        preview.set_animation(&animations[0]);
+        preview.set_animation(&anim_sheet.animations[0]);
     }
 }
 
@@ -606,10 +610,10 @@ void Application::save_file(bool get_new_path) {
 
     SDL_RWwrite(file, value_ptr(sprite_dimensions), sizeof(glm::ivec2), 1);
 
-    u64 num_animations = animations.size();
+    u64 num_animations = anim_sheet.animations.size();
     SDL_RWwrite(file, &num_animations, sizeof(u64), 1);
 
-    for (auto& anim : animations) {
+    for (auto& anim : anim_sheet.animations) {
         SDL_RWwrite(file, anim.name, sizeof(char), Animation::MAX_NAME_LENGTH);
 
         u64 num_steps = anim.steps.size();

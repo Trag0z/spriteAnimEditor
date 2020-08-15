@@ -9,7 +9,7 @@ struct Animation {
     char name[MAX_NAME_LENGTH] = "\n";
 
     struct AnimationStepData {
-        s64 sprite_index;
+        int sprite_index;
         float duration;
     };
 

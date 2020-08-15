@@ -33,7 +33,8 @@ class Application {
 
     // Animation Editor stuff
     size_t selected_anim_index;
-    std::vector<Animation> animations;
+
+    AnimationSheet anim_sheet;
 
     AnimationPreview preview;
 
