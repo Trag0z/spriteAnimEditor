@@ -56,7 +56,6 @@ void AnimationSheet::load_from_text_file(const char* path) {
     SDL_assert_always(file_ptr);
 
     s64 file_size = SDL_RWsize(file_ptr);
-    // NOTE: This is never freed! Can we free this if the pointer is advanced?
     char* file_buf = new char[file_size];
     char* next_char = file_buf;
 

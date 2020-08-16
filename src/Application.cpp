@@ -18,9 +18,9 @@ void Application::init() {
     SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
     SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 2);
 
-    window = SDL_CreateWindow("AnimationEditor", 3870, 1000, window_size.x,
-                              window_size.y,
-                              SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_OPENGL);
+    window =
+        SDL_CreateWindow("AnimationEditor", 0, 0, window_size.x, window_size.y,
+                         SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_OPENGL);
     SDL_assert_always(window);
 
     sdl_renderer = SDL_CreateRenderer(window, -1, 0);
@@ -140,10 +140,6 @@ void Application::run() {
     last_frame_start = frame_start;
     frame_start = SDL_GetTicks();
 
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplSDL2_NewFrame(window);
-    ImGui::NewFrame();
-
     SDL_PumpEvents();
 
     SDL_Event event;
@@ -166,6 +162,9 @@ void Application::run() {
 
     { // Update gui
         using namespace ImGui;
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplSDL2_NewFrame(window);
+        NewFrame();
 
         const ImVec2 window_pos = {-5.0, -5.0};
         SetNextWindowPos(window_pos);
@@ -443,7 +442,7 @@ void Application::open_file() {
 
     if (opened_path) {
         delete[] opened_path;
-    opened_path = nullptr;
+        opened_path = nullptr;
     }
 
     if (strcmp(extension, ".png") == 0) {
