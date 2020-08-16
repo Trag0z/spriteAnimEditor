@@ -10,8 +10,7 @@ int main(int argc, char* argv[]) {
 
     Application app;
     app.init();
-    while (app.running)
+    while (app.is_running)
         app.run();
     return 0;
 }
-

@@ -6,3 +6,31 @@ Darunter befindet sich der Teil des Interfaces, in dem Animationen hinzugefügt 
 Ist eine Animation ausgewählt, werden darunter die einzelnen Schritte der Animation angezeigt. Neue Schritte können per "Add step" hinzugefügt, vorhandene mit dem entsprechenden "Remove"-Button entfernt werden. Zu jedem dieser Schritte werden zwei Eingabefelder angezeigt: "Sprite id" und "Duration". Ersteres bestimmt den Index des Sprites aus dem Spritesheet, das andere die Dauer des Schrittes. Eine Duration von \lstinline{1.00} entspricht hier einem Frame bei 60 Frames pro Sekunde.
 
 Wurde eine Animation erstellt, kann diese per "Save" bzw. "Save as..." gespeichert werden. Dabei wird die Dateiendung \lstinline{.anim} verwendet. Es handelt sich bei dem Format um eine Textdatei, die von diesem Programm auch wieder geöffnet und bearbeitet werden kann.
+
+\chapter{Klasse \lstinline{Application}}
+Die Klasse \lstinline{Application} verwaltet das Fenster und steuert den Kontrollfluss des Programms. In \lstinline{main()} wird ein Objekt dieser Klasse erstellt, mit \lstinline{init()} Initialisiert und danach die Methode \lstinline{run()} in einer Schleife ausgeführt, solange das Programm läuft.
+
+\section{\lstinline{Application::init()}}
+Hier wird für die Erstellung des Fensters und Initialisierung des OpenGL-Kontexts gesorgt. Dabei wird die Bibliothek \href{https://www.libsdl.org/}{SDL2} verwendet, um den Prozess zu vereinfachen. Die Fenstergröße entspricht zu Beginn der Größe des User Interfaces. Es wird OpenGL Version 3.3 im Core Profil verwendet. Außerdem wird \lstinline{GL_BLEND} aktiviert, dass Trans­pa­renzen in den geladenen Spritesheets korrekt dargestellt werden. Falls im Debug-Modus Kompiliert wird, wird \lstinline{GL_DEBUG_OUTPUT} aktiviert und die Funktion \lstinline{handle_gl_debug_output} in OpenGL als Callback gesetzt. Des Weiteren wird die \href{https://github.com/ocornut/imgui}{ImGui-Bibliothek} initialisiert, die für das User Interface verwendet wird. 
+
+Dann werden drei Shader geladen, die jeweils für die Anzeige des Spritesheets, des animierten Sprites und der Trennlinien zwischen den Sprites verwendet werden. Außerdem werden zwei Vertex Buffer (und die zugehörigen Vertex Arrays) angelegt und mit Werten gefüllt. Im Falle von \lstinline{line_vao} enthält der Buffer 2D-Koordinaten für ein einfaches Rechteck, im Falle von \lstinline{sprite_vao} noch UV-Koordinaten zu jedem der Koordinaten. Für beide wird als \lstinline{usage} Parameter \lstinline{GL_STATIC_DRAW} angegeben, da diese Werte zukünftig nicht mehr verändert werden. 
+
+\section{\lstinline{Application::run()}}
+Diese Methode stellt den Core-Loop des Programms dar. Sie empfängt Nutzereingaben, verarbeitet diese und zeichnet das nächste Frame. Sie verarbeitet zuerst alle SDL-Events und reicht diese an ImGui.
+
+Als nächstes wird mithilfe von ImGui das User Interface gezeichnet und die eingaben in diesem verarbeitet. Die Position des UI-Fensters wird etwas nach oben links verschoben, da das ImGui-Fenster sich dann schöner in das Windows-Fenster fügt. Außerdem werden die Flags \lstinline{ImGuiWindowFlags_NoTitleBar} und \lstinline{ImGuiWindowFlags_NoResize} gesetzt, sodass der User das Fenster nicht minimieren oder seine Größe verändern kann; es soll immer seine feste Größe am Linken Rand des Windows-Fensters einnehmen. Die folgenden drei Buttons rufen jeweils Methoden zum Ausführen ihrer Funktionalitäten auf, die später erläutert werden. Die Checkbox "Preview animations" steuert die bool-Variable \lstinline{show_preview} und muss eventuell die vertikale Größe des Fensters anpassen, falls die Vorschau über den unteren Rand des Fensters hinaus ragen würde.
+
+Es folgt das UI-Element zur Einstellung der Sprite Größe. Die Werte dürfen die Größe des Spritesheets nicht überschreiten und auch hier muss im Falle einer Änderung die Fenstergröße angepasst werden. Da die Anzahl der Sprites auf Spritesheet von der Größe der einzelnen Sprites abhängt, muss natürlich auch diese Anzahl angepasst werden. 
+
+Nun wird eine Combobox mit den vorhandenen Animationen angezeigt und bei einer Änderung die entsprechende Animation als Preview-Animation eingestellt. Es folgen die Buttons für das Hinzufügen und Löschen von Animationen. Beim Hinzufügen wird der neuen Animation ihr Index im Array \lstinline{animations} als Name gegeben, da ImGui verlangt, dass alle Elemente in einer Combobox einen einzigartigen Namen haben. Ein ähnliches Vorgehen wird später bei der Auflistung der Animation Steps wiederholt. 
+
+Beim Rendering werden die Uniforms der drei verschiedenen Shader gesetzt und daraufhin per \lstinline{glDrawArrays} im \lstinline{GL_TRIANGLE_STRIP}-Modus jeweils vier Vertices gezeichnet. 
+
+\section{\lstinline{Application::open_file()}}
+Öffnet zuerst einen Windows-Dialog zur Auswahl der zu öffnenden Datei. Der Code hierfür wurde zum Größten Teil \href{https://docs.microsoft.com/en-us/windows/win32/learnwin32/example--the-open-dialog-box}{diesem Beispiel auf Microsofts Website} entnommen. Es können dabei Dateien mit der Endung \lstinline{.png} und \lstinline{.anim} geöffnet werden. Im ersten Fall wird das Spritesheet ohne Animationen initialisiert, im zweiten Fall die bestehende Animation aus der Datei geladen. 
+
+\section{\lstinline{Application::save_file()}}
+Analog zu der zuletzt beschriebenen Methode wird hier unter Umständen zuerst ein neuer Pfad durch einen Windows-Dialog bestimmt und danach die aktuellen Animationsdaten in diesem Pfad gespeichert.
+
+\section{\lstinline{Application::change_window_size()}}
+Helferfunktion zum Ändern der Fenstergröße. Setzt außer der reinen Fenstergröße noch den OpenGL Viewport auf die gleichen Dimensionen und die Höhe des User Interfaces auf die Fensterhöhe.

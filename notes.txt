@@ -5,8 +5,12 @@ TODO:
 - name input character set?
 - gap between preview and animation?
 
+- " makes latex go weird
+- relative paths?
+
 Bugs:               (@BUG)
 - .pngs are flipped vertically
+- clamp to edge macro redefinition
 
 Cleanup:            (@CLEANUP)
 

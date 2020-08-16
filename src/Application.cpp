@@ -132,7 +132,7 @@ void Application::init() {
                           (void*)0);
     glEnableVertexAttribArray(0);
 
-    running = true;
+    is_running = true;
 }
 
 void Application::run() {
@@ -150,14 +150,9 @@ void Application::run() {
             (event.type == SDL_WINDOWEVENT &&
              event.window.event == SDL_WINDOWEVENT_CLOSE &&
              event.window.windowID == SDL_GetWindowID(window))) {
-            running = false;
+            is_running = false;
         }
     }
-
-    // Update mouse
-    mouse.last_x = mouse.x;
-    mouse.last_y = mouse.y;
-    mouse.button_state = SDL_GetMouseState(&mouse.x, &mouse.y);
 
     { // Update gui
         using namespace ImGui;
@@ -267,6 +262,10 @@ void Application::run() {
         }
         SameLine();
         if (Button("Remove")) {
+            // NOTE: Erasing from a std::vector is an expensive operation.
+            // However, using std::list seems ineffective for other parts of the
+            // program and in reality, this application is so simple that it
+            // doesn't matter anyway.
             anim_sheet.animations.erase(anim_sheet.animations.begin() +
                                         selected_anim_index);
         }
@@ -309,13 +308,15 @@ void Application::run() {
                 step.duration = std::clamp(step.duration, 0.0f, 1000.0f);
 
                 if (Button("Remove")) {
+                    // NOTE: Same as above, erasing is expensive from a
+                    // std::vector, but it's ok for this simple application.
                     selected_anim.steps.erase(selected_anim.steps.begin() + i);
                 }
                 PopID();
             }
 
             if (Button("Add step")) {
-                selected_anim.steps.push_back({0, 0.0f});
+                selected_anim.steps.push_back({0, 60.0f});
             }
         }
 
@@ -326,6 +327,7 @@ void Application::run() {
     if (show_preview) {
         float delta_time = static_cast<float>(frame_start - last_frame_start) /
                            static_cast<float>(frame_delay);
+        printf("delta_time: %f\n", delta_time);
         preview.update(delta_time);
     }
 
@@ -343,7 +345,6 @@ void Application::run() {
         glm::vec2 render_position = {static_cast<float>(ui_size.x), 0.0f};
         default_shader.set_render_position(render_position);
 
-        glBindTexture(GL_TEXTURE_2D, anim_sheet.sprite_sheet.id);
         glBindVertexArray(sprite_vao);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
@@ -466,9 +467,13 @@ void Application::open_file() {
 
         anim_sheet.load_from_text_file(new_path);
 
-        // @CLEANUP: is it ok to only bind the texture here and never again?
-        glBindTexture(GL_TEXTURE_2D, anim_sheet.sprite_sheet.id);
+        if (anim_sheet.animations.size() > 0) {
+            selected_anim_index = 0;
+            preview.set_animation(&anim_sheet.animations[0]);
+        }
     }
+
+    glBindTexture(GL_TEXTURE_2D, anim_sheet.sprite_sheet.id);
 
     window_size.x = anim_sheet.sprite_sheet.dimensions.x + ui_size.x;
 
@@ -482,11 +487,6 @@ void Application::open_file() {
     }
 
     change_window_size();
-
-    if (anim_sheet.animations.size() > 0) {
-        selected_anim_index = 0;
-        preview.set_animation(&anim_sheet.animations[0]);
-    }
 }
 
 void Application::save_file(bool get_new_path) {
@@ -545,6 +545,8 @@ void Application::save_file(bool get_new_path) {
 }
 
 void Application::change_window_size() {
+    SDL_assert(window_size.x >= default_ui_size.x &&
+               window_size.y >= default_ui_size.y);
     SDL_SetWindowSize(window, window_size.x, window_size.y);
     glViewport(0, 0, window_size.x, window_size.y);
 
