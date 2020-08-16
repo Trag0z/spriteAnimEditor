@@ -198,6 +198,7 @@ void AnimationPreview::update(float delta_time) {
 }
 
 s64 AnimationPreview::get_sprite_index() {
+    SDL_assert(animation);
     if (animation == nullptr || animation->steps.size() == 0) {
         return -1;
     }

@@ -265,6 +265,7 @@ void Application::run() {
                     new_anim.name, 10);
             anim_sheet.animations.push_back(new_anim);
             selected_anim_index = anim_sheet.animations.size() - 1;
+            preview.set_animation(&anim_sheet.animations[selected_anim_index]);
         }
         SameLine();
         if (Button("Remove")) {
@@ -354,8 +355,8 @@ void Application::run() {
             sheet_shader.use();
             sheet_shader.set_projection(projection);
 
-            render_position.y += std::max(anim_sheet.sprite_sheet.dimensions.y,
-                                          anim_sheet.sprite_dimensions.y);
+            render_position.y += anim_sheet.sprite_sheet.dimensions.y,
+                anim_sheet.sprite_dimensions.y;
             sheet_shader.set_render_position(render_position);
 
             sheet_shader.set_sprite_dimensions(
