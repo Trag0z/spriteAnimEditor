@@ -2,21 +2,19 @@
 #include "pch.h"
 #include "Application.h"
 
-#ifndef NDEBUG
+#ifdef _DEBUG
 #include "DebugCallback.h"
 #endif
 
 void Application::init() {
-#ifndef NDEBUG
+#ifdef _DEBUG
     printf("DEBUG MODE\n");
 #endif
 
     //          Initialize SDL              //
     SDL_assert_always(SDL_Init(SDL_INIT_EVERYTHING) == 0);
+    // @CLEANUP: Why is this not necessary?
     // SDL_assert_always(IMG_Init(IMG_INIT_PNG) != 0);
-
-    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
-    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 2);
 
     window =
         SDL_CreateWindow("AnimationEditor", SDL_WINDOWPOS_CENTERED,
@@ -33,7 +31,7 @@ void Application::init() {
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
                         SDL_GL_CONTEXT_PROFILE_CORE);
 
-#ifndef NDEBUG
+#ifdef _DEBUG
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
 #endif
 
@@ -61,7 +59,7 @@ void Application::init() {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-#ifndef NDEBUG
+#ifdef _DEBUG
     glEnable(GL_DEBUG_OUTPUT);
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
     glDebugMessageCallback(handle_gl_debug_output, nullptr);

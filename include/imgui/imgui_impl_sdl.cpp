@@ -1,4 +1,3 @@
-#include "pch.h"
 // dear imgui: Platform Binding for SDL2
 // This needs to be used along with a Renderer (e.g. DirectX11, OpenGL3, Vulkan..)
 // (Info: SDL2 is a cross-platform general purpose library for handling windows, inputs, graphics context creation, etc.)
@@ -48,7 +47,7 @@
 #include "imgui_impl_sdl.h"
 
 // SDL
-// #include <SDL.h>
+#include <sdl/SDL.h>
 #include <sdl/SDL_syswm.h>
 #if defined(__APPLE__)
 #include "TargetConditionals.h"
