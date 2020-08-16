@@ -19,7 +19,8 @@ void Application::init() {
     SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 2);
 
     window =
-        SDL_CreateWindow("AnimationEditor", 0, 0, window_size.x, window_size.y,
+        SDL_CreateWindow("AnimationEditor", SDL_WINDOWPOS_CENTERED,
+                         SDL_WINDOWPOS_CENTERED, window_size.x, window_size.y,
                          SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_OPENGL);
     SDL_assert_always(window);
 
@@ -202,11 +203,19 @@ void Application::run() {
 
         PushItemWidth(100);
         if (DragInt2("Sprite dimensions", (int*)&anim_sheet.sprite_dimensions,
-                     1.0f, 1,
-                     std::max(anim_sheet.sprite_sheet.dimensions.x,
-                              anim_sheet.sprite_sheet.dimensions.y))) {
-            window_size.x = std::max(anim_sheet.sprite_sheet.dimensions.x,
+                     1.0f)) {
+
+            anim_sheet.sprite_dimensions.x =
+                std::clamp(anim_sheet.sprite_dimensions.x, 0,
+                           anim_sheet.sprite_sheet.dimensions.x);
+            anim_sheet.sprite_dimensions.y =
+                std::clamp(anim_sheet.sprite_dimensions.y, 0,
+                           anim_sheet.sprite_sheet.dimensions.y);
+
+            window_size.x =
+                ui_size.x + std::max(anim_sheet.sprite_sheet.dimensions.x,
                                      anim_sheet.sprite_dimensions.x);
+
             if (show_preview) {
                 window_size.y =
                     std::max(std::max(anim_sheet.sprite_sheet.dimensions.y,
@@ -220,6 +229,11 @@ void Application::run() {
                              default_ui_size.y);
             }
             change_window_size();
+
+            anim_sheet.num_sprites = (anim_sheet.sprite_sheet.dimensions.x /
+                                      anim_sheet.sprite_dimensions.x) *
+                                     (anim_sheet.sprite_sheet.dimensions.y /
+                                      anim_sheet.sprite_dimensions.y);
         }
 
         NewLine();
