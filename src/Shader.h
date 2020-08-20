@@ -1,11 +1,6 @@
 #pragma once
 #include "pch.h"
 
-static bool checkCompileErrors(GLuint object, bool program);
-
-GLuint loadAndCompileShaderFromFile(const char* vShaderPath,
-                                    const char* fShaderPath);
-
 class Shader {
   protected:
     GLuint id, projection_loc, render_position_loc;
@@ -21,14 +16,19 @@ class Shader {
 };
 
 class SheetShader : public Shader {
-    GLuint sprite_dimensions_loc, sprite_index_loc;
+    GLuint sprite_dimensions_loc, set_sprite_position_on_sheet_loc;
 
   public:
     SheetShader() {}
     SheetShader(const char* vert_path, const char* frag_path);
 
     void set_sprite_dimensions(glm::vec2 dimensions) const;
-    void set_sprite_index(GLint index) const;
+
+    // Returns the index of the currently active sprite along the X- and Y-Axis.
+    // These indices/coordinates are used by the shader because the operations
+    // necessary to calculate them from the normal sprite index (namely modulo)
+    // are only supportet in the more recent versions of GLSL.
+    void set_sprite_position_on_sheet(glm::vec2 position) const;
 };
 
 class LineShader : public Shader {

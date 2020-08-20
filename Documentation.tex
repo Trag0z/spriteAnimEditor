@@ -7,15 +7,17 @@ Ist eine Animation ausgewählt, werden darunter die einzelnen Schritte der Anima
 
 Wurde eine Animation erstellt, kann diese per "Save" bzw. "Save as..." gespeichert werden. Dabei wird die Dateiendung \lstinline{.anim} verwendet. Es handelt sich bei dem Format um eine Textdatei, die von diesem Programm auch wieder geöffnet und bearbeitet werden kann.
 
+
+
 \chapter{Klasse \lstinline{Application}}
 Die Klasse \lstinline{Application} verwaltet das Fenster und steuert den Kontrollfluss des Programms. In \lstinline{main()} wird ein Objekt dieser Klasse erstellt, mit \lstinline{init()} Initialisiert und danach die Methode \lstinline{run()} in einer Schleife ausgeführt, solange das Programm läuft.
 
-\section{\lstinline{Application::init()}}
+\section{\lstinline{void Application::init()}}
 Hier wird für die Erstellung des Fensters und Initialisierung des OpenGL-Kontexts gesorgt. Dabei wird die Bibliothek \href{https://www.libsdl.org/}{SDL2} verwendet, um den Prozess zu vereinfachen. Die Fenstergröße entspricht zu Beginn der Größe des User Interfaces. Es wird OpenGL Version 3.3 im Core Profil verwendet. Außerdem wird \lstinline{GL_BLEND} aktiviert, dass Trans­pa­renzen in den geladenen Spritesheets korrekt dargestellt werden. Falls im Debug-Modus Kompiliert wird, wird \lstinline{GL_DEBUG_OUTPUT} aktiviert und die Funktion \lstinline{handle_gl_debug_output} in OpenGL als Callback gesetzt. Des Weiteren wird die \href{https://github.com/ocornut/imgui}{ImGui-Bibliothek} initialisiert, die für das User Interface verwendet wird. 
 
 Dann werden drei Shader geladen, die jeweils für die Anzeige des Spritesheets, des animierten Sprites und der Trennlinien zwischen den Sprites verwendet werden. Außerdem werden zwei Vertex Buffer (und die zugehörigen Vertex Arrays) angelegt und mit Werten gefüllt. Im Falle von \lstinline{line_vao} enthält der Buffer 2D-Koordinaten für ein einfaches Rechteck, im Falle von \lstinline{sprite_vao} noch UV-Koordinaten zu jedem der Koordinaten. Für beide wird als \lstinline{usage} Parameter \lstinline{GL_STATIC_DRAW} angegeben, da diese Werte zukünftig nicht mehr verändert werden. 
 
-\section{\lstinline{Application::run()}}
+\section{\lstinline{void Application::run()}}
 Diese Methode stellt den Core-Loop des Programms dar. Sie empfängt Nutzereingaben, verarbeitet diese und zeichnet das nächste Frame. Sie verarbeitet zuerst alle SDL-Events und reicht diese an ImGui.
 
 Als nächstes wird mithilfe von ImGui das User Interface gezeichnet und die eingaben in diesem verarbeitet. Die Position des UI-Fensters wird etwas nach oben links verschoben, da das ImGui-Fenster sich dann schöner in das Windows-Fenster fügt. Außerdem werden die Flags \lstinline{ImGuiWindowFlags_NoTitleBar} und \lstinline{ImGuiWindowFlags_NoResize} gesetzt, sodass der User das Fenster nicht minimieren oder seine Größe verändern kann; es soll immer seine feste Größe am Linken Rand des Windows-Fensters einnehmen. Die folgenden drei Buttons rufen jeweils Methoden zum Ausführen ihrer Funktionalitäten auf, die später erläutert werden. Die Checkbox "Preview animations" steuert die bool-Variable \lstinline{show_preview} und muss eventuell die vertikale Größe des Fensters anpassen, falls die Vorschau über den unteren Rand des Fensters hinaus ragen würde.
@@ -26,11 +28,51 @@ Nun wird eine Combobox mit den vorhandenen Animationen angezeigt und bei einer �
 
 Beim Rendering werden die Uniforms der drei verschiedenen Shader gesetzt und daraufhin per \lstinline{glDrawArrays} im \lstinline{GL_TRIANGLE_STRIP}-Modus jeweils vier Vertices gezeichnet. 
 
-\section{\lstinline{Application::open_file()}}
+\section{\lstinline{void Application::open_file()}}
 Öffnet zuerst einen Windows-Dialog zur Auswahl der zu öffnenden Datei. Der Code hierfür wurde zum Größten Teil \href{https://docs.microsoft.com/en-us/windows/win32/learnwin32/example--the-open-dialog-box}{diesem Beispiel auf Microsofts Website} entnommen. Es können dabei Dateien mit der Endung \lstinline{.png} und \lstinline{.anim} geöffnet werden. Im ersten Fall wird das Spritesheet ohne Animationen initialisiert, im zweiten Fall die bestehende Animation aus der Datei geladen. 
 
-\section{\lstinline{Application::save_file()}}
-Analog zu der zuletzt beschriebenen Methode wird hier unter Umständen zuerst ein neuer Pfad durch einen Windows-Dialog bestimmt und danach die aktuellen Animationsdaten in diesem Pfad gespeichert.
+\section{\lstinline{void Application::save_file(bool get_new_path)}}
+Analog zu der zuletzt beschriebenen Methode wird hier unter Umständen zuerst ein neuer Pfad durch einen Windows-Dialog bestimmt (falls \lstinline{get_new_path} nicht gesetzt wurde oder noch kein Pfad in \lstinline{opened_path} vorhanden ist) und danach die aktuellen Animationsdaten in diesem Pfad gespeichert.
 
-\section{\lstinline{Application::change_window_size()}}
+\section{\lstinline{void Application::change_window_size()}}
 Helferfunktion zum Ändern der Fenstergröße. Setzt außer der reinen Fenstergröße noch den OpenGL Viewport auf die gleichen Dimensionen und die Höhe des User Interfaces auf die Fensterhöhe.
+
+
+
+\chapter{Structure \lstinline{AnimationSheet}}
+Enthält alle Informationen zu einem Spritesheet und dessen Animationen. 
+
+\section{\lstinline{void AnimationSheet::save_to_text_file(const char* path)}}
+Öffnet die Datei in \lstinline{path} und schreibt sämtliche in den Membervariablen enthaltene Informationen in diese Datei. Hierbei wird eine Varieble pro Zeile geschrieben und einige zusätzliche Zeilen als Kommentare eingefügt, um die Datei leichter in einem Texteditor lesbar zu machen. Zeilen mit Kommentaren beginnen mit \lstinline{#}. 
+
+\section{\lstinline{void AnimationSheet::load_from_text_file(const char* path)}}
+Öffnet die Datei in \lstinline{path} und liest sie aus. Dazu wird die Lambda Expression \lstinline{read_word(char* dst_buf, char delim)} definiert, die Symbole aus der Datei nach \lstinline{dst_buf} kopiert, bis das Symbol \lstinline{delim} erreicht wird. Kommentare werden dabei übersprungen. Zurückgegeben wird die Anzahl der Symbole, die ausgelesen wurden. Mithilfe dieses Lambdas werden alle Werte der Datei ausgelesen und ggf. zu Integer bzw. Float Werten konvertiert.
+
+\section{\lstinline{void AnimationSheet::create_new_from_png(const char* path)}}
+Löscht die aktuell enthaltenen Daten und erstellt ein neues, leeres \lstinline{AnimationSheet} mit der PNG-Datei in \lstinline{path} als Spritesheet. Über den größten gemeinsamen Teiler der Höhe und Breite des geladenen Bildes wird dabei ein initialer Wert für \lstinline{sprite_dimensions} geschätzt.
+
+
+
+\chapter{Klasse \lstinline{AnimationPreview}}
+Hält einen Pointer zu einer \lstinline{Animation} und verwaltet, welcher Sprite des Spritesheets aktuell in der Animation angezeigt werden soll. Wird verwendet, um die Vorschau einer gerade bearbeiteten Animation anzuzeigen. 
+
+\section{\lstinline{void set_animation(const Animation* anim)}}
+Setter für die aktuelle Animation. Setzt \lstinline{current_step} und \lstinline{current_duration} auf Null zurück.
+
+\section{\lstinline{void AnimationPreview::update(float delta_time)}}
+Die aktuelle Animation wird um \lstinline{delta_time} Zeitschritte fortgesetzt. Ist das Ende der Animation erreicht, wird wieder von vorne begonnen. 
+
+\section{\lstinline{int AnimationPreview::get_sprite_index()}}
+Gibt den Index des aktuellen Sprites auf dem Spritesheet zurück, falls eine Animation gesetzt ist.
+
+\chapter{Shader}
+Die Dateien \lstinline{Shader.h} und \lstinline{Shader.cpp} enthalten Klassen zur Verwaltung der drei verschiedenen Shader. So können die Uniform-Variablen effizienter und Fehlersicherer gesetzt werden, da bei den Argumenten der Setter-Methoden Type-Checking erfolgt. Im Folgenden werden die drei verwendeten Shader kurz erklärt.
+
+\section{Default Shader Programm}
+Dieser Shader zeichnet eine Textur, sodass die Uniform-Variable \lstinline{render_position} die obere linke Ecke der Textur bestimmt. Da immer die gleichen Input-Vertices verwendet werden und ihre Positionen ein Quadrat der Länge 1 ergeben, müssen diese Eingabewerte hier im Vertex-Shader mit der größe der Textur multipliziert werden; nur dann können unterschiedlich große Texturen in ihrer tatsächlichen Größe gezeichnet werden. Die Dimensionen der Textur können mit der GLSL-Funktion \lstinline{textureSize()} im Shader abgerufen werden. Die so resultierende Position wird noch mit einer Projektionsmatrix verrechnet, um die finale Position in Bildschirmkoordinaten zu erhalten. Der Fragment-Shader ist in diesem Fall sehr simpel und gibt anhand der UV-Koordinate und der Textur eine Farbe aus.
+
+\section{Line Shader Programm}
+Wird zum zeichnen der Trennlinien zwischen den einzelnen Sprites auf dem Spritesheet verwendet. im Vertex-Shader wird auf die gleiche Art wie im Default Shader Programm die Position errechnet, nur dass diesmal die Dimensionen eines einzelnen Sprites und nicht der gesamten Textur verwendet werden müssen. Größe des Sprites wird deshalb als Uniform-Variable an den Shader geliefert. Der Fragment-Shader gibt immer eine per Uniform festgelegte Farbe aus.
+
+\section{Sheet Shader Programm}
+Dies ist der komplexeste der drei Shader. Der Vertex-Shader ist sehr ähnlich zu dem des Default Shader Programms; es wird aber die Größe eines einzelnen Sprites als Uniform-Variable angegeben, anstatt die Größe der gesamten Textur zu verwenden (analog zum Line Shader Programm). Der Fragment-Shader verwendet eine weitere Uniform-Variable \lstinline{sprite_index}, mit deren Hilfe er den richtigen Sprite vom Spritesheet auswählt und zeichnet. Dazu muss erst aus der Spritegröße und der Texturgröße errechnet werden, wie viel Platz ein Sprite im UV-Koordinatensystem einnimmt. Aus diesem Wert wird dann 

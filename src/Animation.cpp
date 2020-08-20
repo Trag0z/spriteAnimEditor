@@ -56,6 +56,7 @@ void AnimationSheet::load_from_text_file(const char* path) {
     SDL_assert_always(file_ptr);
 
     s64 file_size = SDL_RWsize(file_ptr);
+    // Keep this pointer to the start of the buffer so it can be deleted later
     char* file_buf = new char[file_size];
     char* next_char = file_buf;
 
@@ -73,6 +74,9 @@ void AnimationSheet::load_from_text_file(const char* path) {
             // Comment, skip line
             while (*next_char != '\n') {
                 if (*next_char == '\0') {
+                    // This should never happen if we read files that were
+                    // written by this application
+                    SDL_TriggerBreakpoint();
                     return 0;
                 }
                 ++next_char;
@@ -159,7 +163,7 @@ void AnimationSheet::create_new_from_png(const char* path) {
     sprite_sheet.load_from_file(sprite_path);
 
     // Make a reasonable guess at the new sprite sheets sprite dimensions
-    sprite_dimensions = glm::uvec2(greatest_common_divisor(
+    sprite_dimensions = glm::ivec2(greatest_common_divisor(
         sprite_sheet.dimensions.x, sprite_sheet.dimensions.y));
 
     num_sprites = (sprite_sheet.dimensions.x / sprite_dimensions.x) *
@@ -197,7 +201,7 @@ void AnimationPreview::update(float delta_time) {
     }
 }
 
-s64 AnimationPreview::get_sprite_index() {
+int AnimationPreview::get_sprite_index() {
     SDL_assert(animation);
     if (animation == nullptr || animation->steps.size() == 0) {
         return -1;

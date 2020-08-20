@@ -327,7 +327,6 @@ void Application::run() {
     if (show_preview) {
         float delta_time = static_cast<float>(frame_start - last_frame_start) /
                            static_cast<float>(frame_delay);
-        printf("delta_time: %f\n", delta_time);
         preview.update(delta_time);
     }
 
@@ -348,6 +347,9 @@ void Application::run() {
         glBindVertexArray(sprite_vao);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
+        glm::i32 sprites_per_row = anim_sheet.sprite_sheet.dimensions.x /
+                                   anim_sheet.sprite_dimensions.x;
+
         // Render preview
         if (show_preview &&
             selected_anim_index < anim_sheet.animations.size()) {
@@ -360,8 +362,13 @@ void Application::run() {
 
             sheet_shader.set_sprite_dimensions(
                 static_cast<glm::vec2>(anim_sheet.sprite_dimensions));
-            sheet_shader.set_sprite_index(
-                static_cast<GLint>(preview.get_sprite_index()));
+
+            glm::i32 sprite_index = preview.get_sprite_index();
+            float x = static_cast<float>(static_cast<int>(sprite_index) % static_cast<int>(sprites_per_row));
+            float y = static_cast<float>(static_cast<int>(sprite_index) / static_cast<int>(sprites_per_row));
+
+            sheet_shader.set_sprite_position_on_sheet(glm::vec2(x, y));
+
             glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
         }
 
@@ -377,9 +384,6 @@ void Application::run() {
 
             for (glm::i32 i = 0;
                  i < static_cast<glm::i32>(anim_sheet.num_sprites); ++i) {
-                glm::i32 sprites_per_row =
-                    anim_sheet.sprite_sheet.dimensions.x /
-                    anim_sheet.sprite_dimensions.x;
 
                 glm::vec2 position;
                 position.x = static_cast<float>(

@@ -7,6 +7,7 @@ TODO:
 
 - " makes latex go weird
 - relative paths?
+- remove types.h
 
 Bugs:               (@BUG)
 - .pngs are flipped vertically

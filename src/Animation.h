@@ -9,7 +9,7 @@ struct Animation {
     char name[MAX_NAME_LENGTH] = "\n";
 
     struct AnimationStepData {
-        int sprite_index;
+        glm::i32 sprite_index;
         float duration;
     };
 
@@ -39,5 +39,5 @@ class AnimationPreview {
   public:
     void set_animation(const Animation* anim);
     void update(float delta_time);
-    s64 get_sprite_index();
+    glm::i32 get_sprite_index();
 };
