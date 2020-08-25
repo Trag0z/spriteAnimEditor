@@ -90,10 +90,10 @@ void Application::init() {
         glm::vec2 pos, uv_coord;
     } sprite_vertices[4];
 
-    sprite_vertices[0] = {{0.0f, 0.0f}, {0.0f, 1.0f}};
-    sprite_vertices[1] = {{1.0f, 0.0f}, {1.0f, 1.0f}};
-    sprite_vertices[2] = {{0.0f, 1.0f}, {0.0f, 0.0f}};
-    sprite_vertices[3] = {{1.0f, 1.0f}, {1.0f, 0.0f}};
+    sprite_vertices[0] = {{0.0f, 0.0f}, {0.0f, 0.0f}};
+    sprite_vertices[1] = {{1.0f, 0.0f}, {1.0f, 0.0f}};
+    sprite_vertices[2] = {{0.0f, 1.0f}, {0.0f, 1.0f}};
+    sprite_vertices[3] = {{1.0f, 1.0f}, {1.0f, 1.0f}};
 
     glGenVertexArrays(1, &sprite_vao);
     glBindVertexArray(sprite_vao);
@@ -224,9 +224,10 @@ void Application::run() {
             change_window_size();
 
             anim_sheet.num_sprites = (anim_sheet.sprite_sheet.dimensions.x /
-                                      anim_sheet.sprite_dimensions.x) -
-                                     1 * (anim_sheet.sprite_sheet.dimensions.y /
-                                          anim_sheet.sprite_dimensions.y);
+                                          anim_sheet.sprite_dimensions.x -
+                                      1) *
+                                     (anim_sheet.sprite_sheet.dimensions.y /
+                                      anim_sheet.sprite_dimensions.y);
         }
 
         NewLine();

@@ -25,9 +25,9 @@ class SheetShader : public Shader {
     void set_sprite_dimensions(glm::vec2 dimensions) const;
 
     // Returns the index of the currently active sprite along the X- and Y-Axis.
-    // These indices/coordinates are used by the shader because the operations
-    // necessary to calculate them from the normal sprite index (namely modulo)
-    // are only supportet in the more recent versions of GLSL.
+    // These coordinates are used by the shader because the operations necessary
+    // to calculate them from the normal sprite index (namely modulo) are only
+    // supported in the more recent versions of GLSL.
     void set_sprite_position_on_sheet(glm::vec2 position) const;
 };
 

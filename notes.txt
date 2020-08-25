@@ -1,6 +1,7 @@
 NEXT:
 
 TODO:
+- resize ui with big textures
 - open name input modal when adding animation?
 - name input character set?
 - gap between preview and animation?
@@ -10,7 +11,6 @@ TODO:
 - remove types.h
 
 Bugs:               (@BUG)
-- .pngs are flipped vertically
 - clamp to edge macro redefinition
 
 Cleanup:            (@CLEANUP)
