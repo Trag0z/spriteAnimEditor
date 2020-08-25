@@ -224,8 +224,7 @@ void Application::run() {
             change_window_size();
 
             anim_sheet.num_sprites = (anim_sheet.sprite_sheet.dimensions.x /
-                                          anim_sheet.sprite_dimensions.x -
-                                      1) *
+                                      anim_sheet.sprite_dimensions.x) *
                                      (anim_sheet.sprite_sheet.dimensions.y /
                                       anim_sheet.sprite_dimensions.y);
         }
@@ -513,6 +512,8 @@ void Application::save_file(bool get_new_path) {
         COMDLG_FILTERSPEC file_type = {L".anim", L"*.anim"};
         pFileSave->SetFileTypes(1, &file_type);
 
+        pFileSave->SetDefaultExtension(L".anim");
+
         // Show the Open dialog box.
         hr = pFileSave->Show(NULL);
 
@@ -544,6 +545,8 @@ void Application::save_file(bool get_new_path) {
             pFileSave->Release();
 
             CoUninitialize();
+        } else {
+            return;
         }
     }
 
