@@ -224,9 +224,9 @@ void Application::run() {
             change_window_size();
 
             anim_sheet.num_sprites = (anim_sheet.sprite_sheet.dimensions.x /
-                                      anim_sheet.sprite_dimensions.x) *
-                                     (anim_sheet.sprite_sheet.dimensions.y /
-                                      anim_sheet.sprite_dimensions.y);
+                                      anim_sheet.sprite_dimensions.x) -
+                                     1 * (anim_sheet.sprite_sheet.dimensions.y /
+                                          anim_sheet.sprite_dimensions.y);
         }
 
         NewLine();
@@ -356,16 +356,18 @@ void Application::run() {
             sheet_shader.use();
             sheet_shader.set_projection(projection);
 
-            render_position.y += anim_sheet.sprite_sheet.dimensions.y,
-                anim_sheet.sprite_dimensions.y;
+            render_position.y += anim_sheet.sprite_sheet.dimensions
+                                     .y; //, anim_sheet.sprite_dimensions.y;
             sheet_shader.set_render_position(render_position);
 
             sheet_shader.set_sprite_dimensions(
                 static_cast<glm::vec2>(anim_sheet.sprite_dimensions));
 
             glm::i32 sprite_index = preview.get_sprite_index();
-            float x = static_cast<float>(static_cast<int>(sprite_index) % static_cast<int>(sprites_per_row));
-            float y = static_cast<float>(static_cast<int>(sprite_index) / static_cast<int>(sprites_per_row));
+            float x = static_cast<float>(static_cast<int>(sprite_index) %
+                                         static_cast<int>(sprites_per_row));
+            float y = static_cast<float>(static_cast<int>(sprite_index) /
+                                         static_cast<int>(sprites_per_row));
 
             sheet_shader.set_sprite_position_on_sheet(glm::vec2(x, y));
 

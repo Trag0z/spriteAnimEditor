@@ -166,8 +166,8 @@ void AnimationSheet::create_new_from_png(const char* path) {
     sprite_dimensions = glm::ivec2(greatest_common_divisor(
         sprite_sheet.dimensions.x, sprite_sheet.dimensions.y));
 
-    num_sprites = (sprite_sheet.dimensions.x / sprite_dimensions.x) *
-                  (sprite_sheet.dimensions.y / sprite_dimensions.y);
+    num_sprites = (sprite_sheet.dimensions.x / sprite_dimensions.x) -
+                  1 * (sprite_sheet.dimensions.y / sprite_dimensions.y);
 
     animations.clear();
 }
