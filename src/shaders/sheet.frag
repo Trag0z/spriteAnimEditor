@@ -7,15 +7,11 @@ uniform sampler2D texture1;
 uniform vec2 sprite_dimensions;
 uniform vec2 sprite_position_on_sheet;
 
-// float modulus(float x,float y){
-    //     return x-y*floor(x/y);
-// }
-
 void main()
 {
     ivec2 sheet_dimensions=textureSize(texture1,0);
-    vec2 sprite_uv_dimensions={sprite_dimensions.x/float(sheet_dimensions.x),sprite_dimensions.y/float(sheet_dimensions.y)};
+    vec2 sprite_uv_dimensions=sprite_dimensions/vec2(sheet_dimensions);
     
-    vec2 new_uv_coord=vec2((sprite_position_on_sheet.x+uv_coord.x)*sprite_uv_dimensions.x,(sprite_position_on_sheet.y+uv_coord.y)*sprite_uv_dimensions.y);
+    vec2 new_uv_coord=(sprite_position_on_sheet+uv_coord)*sprite_uv_dimensions;
     frag_color=texture(texture1,new_uv_coord);
 }
