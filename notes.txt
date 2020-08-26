@@ -1,13 +1,13 @@
 NEXT:
 
 TODO:
-- resize ui with big textures
 - open name input modal when adding animation?
 - name input character set?
 - gap between preview and animation?
 
 - " makes latex go weird
 - remove types.h
+- add to doc that .anim files have to be in same folder as .pngs
 
 Bugs:               (@BUG)
 - clamp to edge macro redefinition

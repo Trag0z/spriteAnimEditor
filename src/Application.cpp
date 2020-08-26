@@ -172,10 +172,11 @@ void Application::run() {
         ImGui_ImplSDL2_NewFrame(window);
         NewFrame();
 
-        const ImVec2 window_pos = {-5.0, -5.0};
-        SetNextWindowPos(window_pos);
-        SetNextWindowSize(ImVec2(static_cast<float>(ui_size.x) - window_pos.x,
-                                 static_cast<float>(ui_size.y) - window_pos.y));
+        const ImVec2 ui_window_pos = {-5.0, -5.0};
+        SetNextWindowPos(ui_window_pos);
+        SetNextWindowSize(
+            ImVec2(static_cast<float>(ui_size.x) - ui_window_pos.x,
+                   static_cast<float>(ui_size.y) - ui_window_pos.y));
         Begin("Controls", NULL,
               ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
 
@@ -502,10 +503,10 @@ void Application::open_file() {
     if (show_preview) {
         window_size.y = std::max(anim_sheet.sprite_sheet.dimensions.y +
                                      anim_sheet.sprite_dimensions.y,
-                                 ui_size.y);
+                                 default_ui_size.y);
     } else {
         window_size.y =
-            std::max(anim_sheet.sprite_sheet.dimensions.y, ui_size.y);
+            std::max(anim_sheet.sprite_sheet.dimensions.y, default_ui_size.y);
     }
 
     change_window_size();
@@ -577,5 +578,5 @@ void Application::change_window_size() {
     SDL_SetWindowSize(window, window_size.x, window_size.y);
     glViewport(0, 0, window_size.x, window_size.y);
 
-    ui_size.y = std::clamp(ui_size.y, default_ui_size.y, window_size.y);
+    ui_size.y =  window_size.y;
 }
