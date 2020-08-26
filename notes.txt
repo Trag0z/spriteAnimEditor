@@ -7,7 +7,6 @@ TODO:
 - gap between preview and animation?
 
 - " makes latex go weird
-- relative paths?
 - remove types.h
 
 Bugs:               (@BUG)

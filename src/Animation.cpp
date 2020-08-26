@@ -29,7 +29,7 @@ void AnimationSheet::save_to_text_file(const char* path) const {
         sprintf_s(text_buf, TEXT_BUF_SIZE,
                   "# Sprite sheet path\n%s\n# Dimensions\n%d,%d\n# Number of "
                   "animations\n%zu\n",
-                  sprite_path, sprite_dimensions.x, sprite_dimensions.y,
+                  png_file_name, sprite_dimensions.x, sprite_dimensions.y,
                   animations.size());
     SDL_assert(length != -1);
     SDL_RWwrite(file_ptr, text_buf, sizeof(char), length);
@@ -100,15 +100,21 @@ void AnimationSheet::load_from_text_file(const char* path) {
         return ++num_chars_written;
     };
 
-    // Read sprite sheet path
-    size_t sprite_path_length = read_word(word_buf);
-    if (sprite_path) {
-        delete[] sprite_path;
+    // Read png file name
+    size_t png_name_length = read_word(word_buf);
+    if (png_file_name) {
+        delete[] png_file_name;
     }
-    sprite_path = new char[sprite_path_length];
-    strcpy_s(sprite_path, sprite_path_length, word_buf);
+    png_file_name = new char[png_name_length];
+    strcpy_s(png_file_name, png_name_length, word_buf);
 
-    sprite_sheet.load_from_file(sprite_path);
+    // Create full path to png from path and png_file_name
+    std::string png_path(path);
+    size_t last_slash = png_path.find_last_of('\\');
+    png_path.erase(last_slash);
+    png_path.append(png_file_name);
+
+    sprite_sheet.load_from_file(png_path.c_str());
 
     // Read sprite dimensions
     read_word(word_buf, ',');
@@ -153,14 +159,16 @@ void AnimationSheet::load_from_text_file(const char* path) {
 }
 
 void AnimationSheet::create_new_from_png(const char* path) {
-    if (sprite_path) {
-        delete[] sprite_path;
-    }
-    size_t length = strnlen_s(path, MAX_SPRITE_PATH_LENGTH) + 1;
-    sprite_path = new char[length];
-    strcpy_s(sprite_path, length, path);
+    const char* sprite_name = strrchr(path, '\\');
 
-    sprite_sheet.load_from_file(sprite_path);
+    if (png_file_name) {
+        delete[] png_file_name;
+    }
+    size_t length = strnlen_s(sprite_name, MAX_SPRITE_PATH_LENGTH) + 1;
+    png_file_name = new char[length];
+    strcpy_s(png_file_name, length, sprite_name);
+
+    sprite_sheet.load_from_file(path);
 
     // Make a reasonable guess at the new sprite sheets sprite dimensions
     sprite_dimensions = glm::ivec2(greatest_common_divisor(

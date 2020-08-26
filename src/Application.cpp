@@ -545,7 +545,7 @@ void Application::save_file(bool get_new_path) {
 
         SDL_assert_always(SUCCEEDED(hr));
         PWSTR pszFilePath;
-        hr = pItem->GetDisplayName(SIGDN_PARENTRELATIVE, &pszFilePath);
+        hr = pItem->GetDisplayName(SIGDN_FILESYSPATH, &pszFilePath);
 
         // Copy path to opened_path
         if (opened_path) {
