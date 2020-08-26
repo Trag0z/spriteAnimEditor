@@ -132,18 +132,6 @@ void Application::init() {
                           (void*)0);
     glEnableVertexAttribArray(0);
 
-    // // Get the path to this executable
-    // DWORD buf_size = 1024;
-    // LPSTR path_buf = new char[buf_size];
-    // DWORD result = GetModuleFileNameA(NULL, path_buf, buf_size);
-
-    // SDL_assert_always(result < buf_size && result != 0);
-
-    // executable_path = new char[result + 1];
-    // strcpy_s(executable_path, result + 1, path_buf);
-
-    // delete[] path_buf;
-
     is_running = true;
 }
 
@@ -283,8 +271,10 @@ void Application::run() {
                                         selected_anim_index);
         }
         SameLine();
+        bool set_focus = false;
         if (Button("Set name")) {
             OpenPopup("Set name.");
+            set_focus = true;
         }
 
         if (selected_anim_index < anim_sheet.animations.size()) {
@@ -293,6 +283,9 @@ void Application::run() {
             SetNextItemWidth(300);
             if (BeginPopupModal("Set name.")) {
                 static char new_name_buf[Animation::MAX_NAME_LENGTH];
+                if (set_focus) {
+                    SetKeyboardFocusHere();
+                }
                 InputTextWithHint("Name", "New name", new_name_buf,
                                   Animation::MAX_NAME_LENGTH);
                 if (Button("Set")) {
@@ -578,5 +571,5 @@ void Application::change_window_size() {
     SDL_SetWindowSize(window, window_size.x, window_size.y);
     glViewport(0, 0, window_size.x, window_size.y);
 
-    ui_size.y =  window_size.y;
+    ui_size.y = window_size.y;
 }
