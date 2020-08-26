@@ -418,7 +418,7 @@ void Application::run() {
     SDL_GL_SwapWindow(window);
 
     // Wait for next frame
-    u32 last_frame_time = SDL_GetTicks() - frame_start;
+    glm::u32 last_frame_time = SDL_GetTicks() - frame_start;
     if (frame_delay > last_frame_time)
         SDL_Delay(frame_delay - last_frame_time);
 }

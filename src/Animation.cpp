@@ -55,7 +55,7 @@ void AnimationSheet::load_from_text_file(const char* path) {
     SDL_RWops* file_ptr = SDL_RWFromFile(path, "r");
     SDL_assert_always(file_ptr);
 
-    s64 file_size = SDL_RWsize(file_ptr);
+    glm::i64 file_size = SDL_RWsize(file_ptr);
     // Keep this pointer to the start of the buffer so it can be deleted later
     char* file_buf = new char[file_size];
     char* next_char = file_buf;

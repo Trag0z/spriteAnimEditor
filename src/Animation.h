@@ -1,7 +1,6 @@
 #pragma once
 #include "pch.h"
 #include "Texture.h"
-#include "Types.h"
 
 struct Animation {
     static const size_t MAX_NAME_LENGTH = 64;

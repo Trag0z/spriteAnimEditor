@@ -6,11 +6,11 @@ TODO:
 - gap between preview and animation?
 
 - " makes latex go weird
-- remove types.h
 - add to doc that .anim files have to be in same folder as .pngs
 
 Bugs:               (@BUG)
 - clamp to edge macro redefinition
+- animation speeds up after windows dialogs
 
 Cleanup:            (@CLEANUP)
 

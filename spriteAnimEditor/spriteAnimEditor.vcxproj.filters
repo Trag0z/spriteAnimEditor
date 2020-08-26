@@ -101,9 +101,6 @@
     <ClInclude Include="..\src\Texture.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\Types.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\Animation.h">
       <Filter>Header Files</Filter>
     </ClInclude>
