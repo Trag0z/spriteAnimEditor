@@ -132,6 +132,18 @@ void Application::init() {
                           (void*)0);
     glEnableVertexAttribArray(0);
 
+    // // Get the path to this executable
+    // DWORD buf_size = 1024;
+    // LPSTR path_buf = new char[buf_size];
+    // DWORD result = GetModuleFileNameA(NULL, path_buf, buf_size);
+
+    // SDL_assert_always(result < buf_size && result != 0);
+
+    // executable_path = new char[result + 1];
+    // strcpy_s(executable_path, result + 1, path_buf);
+
+    // delete[] path_buf;
+
     is_running = true;
 }
 
@@ -437,10 +449,17 @@ void Application::open_file() {
     // Get the file name from the dialog box.
     IShellItem* pItem;
     hr = pFileOpen->GetResult(&pItem);
-
     SDL_assert_always(SUCCEEDED(hr));
+
+    if (assets_directory) {
+        assets_directory->Release();
+    }
+    hr = pItem->GetParent(&assets_directory);
+    SDL_assert_always(SUCCEEDED(hr));
+
     PWSTR pszFilePath;
     hr = pItem->GetDisplayName(SIGDN_FILESYSPATH, &pszFilePath);
+    SDL_assert_always(SUCCEEDED(hr));
 
     size_t path_length = wcslen(pszFilePath) + 1;
     char* new_path = new char[path_length];
@@ -448,8 +467,6 @@ void Application::open_file() {
     wcstombs_s(nullptr, new_path, path_length, pszFilePath, path_length);
 
     CoTaskMemFree(pszFilePath);
-
-    SDL_assert_always(SUCCEEDED(hr));
 
     pItem->Release();
     pFileOpen->Release();
@@ -513,41 +530,42 @@ void Application::save_file(bool get_new_path) {
         pFileSave->SetFileTypes(1, &file_type);
 
         pFileSave->SetDefaultExtension(L".anim");
+        pFileSave->SetFolder(assets_directory);
 
         // Show the Open dialog box.
         hr = pFileSave->Show(NULL);
 
-        // Get the file name from the dialog box.
-        if (SUCCEEDED(hr)) {
-            IShellItem* pItem;
-            hr = pFileSave->GetResult(&pItem);
-
-            SDL_assert_always(SUCCEEDED(hr));
-            PWSTR pszFilePath;
-            hr = pItem->GetDisplayName(SIGDN_FILESYSPATH, &pszFilePath);
-
-            // Copy path to opened_path
-            if (opened_path) {
-                delete[] opened_path;
-            }
-
-            size_t length = wcslen(pszFilePath) + 1;
-            opened_path = new char[length];
-
-            wcstombs_s(nullptr, opened_path, length, pszFilePath, length);
-
-            CoTaskMemFree(pszFilePath);
-
-            // Display the file name to the user.
-            SDL_assert_always(SUCCEEDED(hr));
-
-            pItem->Release();
-            pFileSave->Release();
-
-            CoUninitialize();
-        } else {
+        if (!SUCCEEDED(hr)) {
             return;
         }
+
+        // Get the file name from the dialog box.
+        IShellItem* pItem;
+        hr = pFileSave->GetResult(&pItem);
+
+        SDL_assert_always(SUCCEEDED(hr));
+        PWSTR pszFilePath;
+        hr = pItem->GetDisplayName(SIGDN_PARENTRELATIVE, &pszFilePath);
+
+        // Copy path to opened_path
+        if (opened_path) {
+            delete[] opened_path;
+        }
+
+        size_t length = wcslen(pszFilePath) + 1;
+        opened_path = new char[length];
+
+        wcstombs_s(nullptr, opened_path, length, pszFilePath, length);
+
+        CoTaskMemFree(pszFilePath);
+
+        // Display the file name to the user.
+        SDL_assert_always(SUCCEEDED(hr));
+
+        pItem->Release();
+        pFileSave->Release();
+
+        CoUninitialize();
     }
 
     anim_sheet.save_to_text_file(opened_path);
