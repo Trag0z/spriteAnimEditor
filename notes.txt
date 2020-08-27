@@ -1,12 +1,7 @@
 NEXT:
 
 TODO:
-- open name input modal when adding animation?
-- name input character set?
-- gap between preview and animation?
-
 - " makes latex go weird
-- add to doc that .anim files have to be in same folder as .pngs
 
 Bugs:               (@BUG)
 - clamp to edge macro redefinition

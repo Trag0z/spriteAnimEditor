@@ -180,19 +180,7 @@ void Application::run() {
             save_file(true);
         }
 
-        if (Checkbox("Preview animation", &show_preview)) {
-            if (show_preview) {
-                window_size.y = std::max(anim_sheet.sprite_sheet.dimensions.y +
-                                             anim_sheet.sprite_dimensions.y,
-                                         ui_size.y);
-                change_window_size();
-            } else {
-                window_size.y =
-                    std::max(anim_sheet.sprite_sheet.dimensions.y, ui_size.y);
-                change_window_size();
-            }
-        }
-
+        Checkbox("Preview animation", &show_preview);
         Checkbox("Lines between sprites", &show_lines);
 
         PushItemWidth(100);
