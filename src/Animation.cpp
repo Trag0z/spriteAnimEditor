@@ -1,7 +1,6 @@
 #pragma once
 #include "pch.h"
 #include "Animation.h"
-#include "Util.h"
 
 /*
     AnimationSheet text file format:
@@ -156,6 +155,12 @@ void AnimationSheet::load_from_text_file(const char* path) {
     delete[] file_buf;
 
     SDL_RWclose(file_ptr);
+}
+
+template <typename T> static T greatest_common_divisor(T a, T b) {
+    if (b == 0)
+        return a;
+    return greatest_common_divisor(b, a % b);
 }
 
 void AnimationSheet::create_new_from_png(const char* path) {
