@@ -32,7 +32,7 @@ class Application {
     AnimationPreview preview;
 
     char* opened_path = nullptr;
-    IShellItem* assets_directory = nullptr;
+    IShellItem* animations_directory = nullptr;
 
     bool show_preview = true;
     bool show_lines = true;

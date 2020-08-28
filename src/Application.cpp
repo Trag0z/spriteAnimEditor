@@ -16,10 +16,9 @@ void Application::init() {
     // @CLEANUP: Why is this not necessary?
     // SDL_assert_always(IMG_Init(IMG_INIT_PNG) != 0);
 
-    window =
-        SDL_CreateWindow("AnimationEditor", SDL_WINDOWPOS_CENTERED,
-                         SDL_WINDOWPOS_CENTERED, window_size.x, window_size.y,
-                         SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_OPENGL);
+    window = SDL_CreateWindow("AnimationEditor", 10, 40, window_size.x,
+                              window_size.y,
+                              SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_OPENGL);
     SDL_assert_always(window);
 
     sdl_renderer = SDL_CreateRenderer(window, -1, 0);
@@ -250,7 +249,7 @@ void Application::run() {
             preview.set_animation(&anim_sheet.animations[selected_anim_index]);
         }
         SameLine();
-        if (Button("Remove")) {
+        if (Button("Remove") && !anim_sheet.animations.empty()) {
             // NOTE: Erasing from a std::vector is an expensive operation.
             // However, using std::list seems ineffective for other parts of the
             // program and in reality, this application is so simple that it
@@ -433,10 +432,10 @@ void Application::open_file() {
     hr = pFileOpen->GetResult(&pItem);
     SDL_assert_always(SUCCEEDED(hr));
 
-    if (assets_directory) {
-        assets_directory->Release();
+    if (animations_directory) {
+        animations_directory->Release();
     }
-    hr = pItem->GetParent(&assets_directory);
+    hr = pItem->GetParent(&animations_directory);
     SDL_assert_always(SUCCEEDED(hr));
 
     PWSTR pszFilePath;
@@ -512,7 +511,7 @@ void Application::save_file(bool get_new_path) {
         pFileSave->SetFileTypes(1, &file_type);
 
         pFileSave->SetDefaultExtension(L".anim");
-        pFileSave->SetFolder(assets_directory);
+        pFileSave->SetFolder(animations_directory);
 
         // Show the Open dialog box.
         hr = pFileSave->Show(NULL);
