@@ -89,11 +89,12 @@ void AnimationSheet::load_from_text_file(const char* path) {
         while (*next_char != delim && num_chars_written != WORD_BUF_SIZE - 1) {
             if (*next_char == '\r') {
                 // To deal with different end of line sequences
+                ++next_char;
                 continue;
             }
             *dst_buf = *next_char;
-            dst_buf++;
-            next_char++;
+            ++dst_buf;
+            ++next_char;
             ++num_chars_written;
         }
         // Add deliminating null character and advance next_char pointer
