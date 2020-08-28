@@ -81,12 +81,16 @@ void AnimationSheet::load_from_text_file(const char* path) {
                 ++next_char;
             }
         }
-        if (*next_char == '\n') {
+        if (*next_char == '\r' || *next_char == '\n') {
             ++next_char;
         }
 
         size_t num_chars_written = 0;
         while (*next_char != delim && num_chars_written != WORD_BUF_SIZE - 1) {
+            if (*next_char == '\r') {
+                // To deal with different end of line sequences
+                continue;
+            }
             *dst_buf = *next_char;
             dst_buf++;
             next_char++;
